@@ -10,12 +10,33 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AboutRouteImport } from './routes/about'
+import { Route as AssistantRouteImport } from './routes/assistant'
+import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as ExploreRouteImport } from './routes/explore'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as PathsRouteImport } from './routes/paths'
+import { Route as CourseIdRouteImport } from './routes/course.$id'
+import { Route as PathIdRouteImport } from './routes/path.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AboutRoute = AboutRouteImport.update({
+  id: '/about',
+  path: '/about',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AssistantRoute = AssistantRouteImport.update({
+  id: '/assistant',
+  path: '/assistant',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ExploreRoute = ExploreRouteImport.update({
@@ -23,40 +44,107 @@ const ExploreRoute = ExploreRouteImport.update({
   path: '/explore',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PathsRoute = PathsRouteImport.update({
   id: '/paths',
   path: '/paths',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CourseIdRoute = CourseIdRouteImport.update({
+  id: '/course/$id',
+  path: '/course/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PathIdRoute = PathIdRouteImport.update({
+  id: '/path/$id',
+  path: '/path/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
+  '/assistant': typeof AssistantRoute
+  '/dashboard': typeof DashboardRoute
   '/explore': typeof ExploreRoute
+  '/onboarding': typeof OnboardingRoute
   '/paths': typeof PathsRoute
+  '/course/$id': typeof CourseIdRoute
+  '/path/$id': typeof PathIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
+  '/assistant': typeof AssistantRoute
+  '/dashboard': typeof DashboardRoute
   '/explore': typeof ExploreRoute
+  '/onboarding': typeof OnboardingRoute
   '/paths': typeof PathsRoute
+  '/course/$id': typeof CourseIdRoute
+  '/path/$id': typeof PathIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
+  '/assistant': typeof AssistantRoute
+  '/dashboard': typeof DashboardRoute
   '/explore': typeof ExploreRoute
+  '/onboarding': typeof OnboardingRoute
   '/paths': typeof PathsRoute
+  '/course/$id': typeof CourseIdRoute
+  '/path/$id': typeof PathIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/explore' | '/paths'
+  fullPaths:
+    | '/'
+    | '/about'
+    | '/assistant'
+    | '/dashboard'
+    | '/explore'
+    | '/onboarding'
+    | '/paths'
+    | '/course/$id'
+    | '/path/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/explore' | '/paths'
-  id: '__root__' | '/' | '/explore' | '/paths'
+  to:
+    | '/'
+    | '/about'
+    | '/assistant'
+    | '/dashboard'
+    | '/explore'
+    | '/onboarding'
+    | '/paths'
+    | '/course/$id'
+    | '/path/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/about'
+    | '/assistant'
+    | '/dashboard'
+    | '/explore'
+    | '/onboarding'
+    | '/paths'
+    | '/course/$id'
+    | '/path/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AboutRoute: typeof AboutRoute
+  AssistantRoute: typeof AssistantRoute
+  DashboardRoute: typeof DashboardRoute
   ExploreRoute: typeof ExploreRoute
+  OnboardingRoute: typeof OnboardingRoute
   PathsRoute: typeof PathsRoute
+  CourseIdRoute: typeof CourseIdRoute
+  PathIdRoute: typeof PathIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -68,11 +156,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/about': {
+      id: '/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AboutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/assistant': {
+      id: '/assistant'
+      path: '/assistant'
+      fullPath: '/assistant'
+      preLoaderRoute: typeof AssistantRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/explore': {
       id: '/explore'
       path: '/explore'
       fullPath: '/explore'
       preLoaderRoute: typeof ExploreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/paths': {
@@ -82,13 +198,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PathsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/course/$id': {
+      id: '/course/$id'
+      path: '/course/$id'
+      fullPath: '/course/$id'
+      preLoaderRoute: typeof CourseIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/path/$id': {
+      id: '/path/$id'
+      path: '/path/$id'
+      fullPath: '/path/$id'
+      preLoaderRoute: typeof PathIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AboutRoute: AboutRoute,
+  AssistantRoute: AssistantRoute,
+  DashboardRoute: DashboardRoute,
   ExploreRoute: ExploreRoute,
+  OnboardingRoute: OnboardingRoute,
   PathsRoute: PathsRoute,
+  CourseIdRoute: CourseIdRoute,
+  PathIdRoute: PathIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

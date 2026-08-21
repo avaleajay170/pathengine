@@ -16,7 +16,7 @@ interface AssistantState {
   thinking: boolean;
   setOpen: (v: boolean) => void;
   send: (text: string) => void;
-  explain: (opts: { title: string; reason: string; courseId?: string }) => void;
+  explain: (opts: { title: string; reason: string; courseId?: string | undefined }) => void;
 }
 
 const AssistantContext = createContext<AssistantState | null>(null);
@@ -120,7 +120,15 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
   );
 
   const explain = useCallback(
-    ({ title, reason, courseId }: { title: string; reason: string; courseId?: string }) => {
+    ({
+      title,
+      reason,
+      courseId,
+    }: {
+      title: string;
+      reason: string;
+      courseId?: string | undefined;
+    }) => {
       setOpen(true);
       setMessages((m) => [
         ...m,

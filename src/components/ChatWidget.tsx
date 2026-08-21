@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useLocation } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Bot, Maximize2, MessageCircle, X } from "lucide-react";
 import { useAssistant } from "@/lib/assistant";
@@ -6,6 +6,10 @@ import { ChatThread } from "@/components/Chat";
 
 export function ChatWidget() {
   const { open, setOpen } = useAssistant();
+  const { pathname } = useLocation();
+
+  // The dedicated /assistant view already renders this thread full-page.
+  if (pathname === "/assistant") return null;
 
   return (
     <>

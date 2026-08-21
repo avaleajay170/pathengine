@@ -893,3 +893,135 @@ export const skillTrend = [
   { month: "Jul", Python: 75, Statistics: 42, ML: 27 },
   { month: "Aug", Python: 78, Statistics: 45, ML: 30 },
 ];
+
+// ---------------------------------------------------------------------------
+// Course reviews. Deterministic per course id so the same course always shows
+// the same reviews — swap getReviews() for a fetch when a real API exists.
+// ---------------------------------------------------------------------------
+
+export interface Review {
+  id: string;
+  name: string;
+  role: string;
+  rating: number;
+  when: string;
+  body: string;
+}
+
+const reviewers = [
+  { name: "Priyanka S.", role: "Analyst, fintech" },
+  { name: "Marcus O.", role: "Career switcher" },
+  { name: "Yuki T.", role: "Backend engineer" },
+  { name: "Dani R.", role: "Recent graduate" },
+  { name: "Tobias L.", role: "Ops lead" },
+  { name: "Amara N.", role: "Product designer" },
+  { name: "Sam K.", role: "Data engineer" },
+  { name: "Helena V.", role: "Consultant" },
+] as const;
+
+const firstSkill = (c: Course) => c.skills[0] ?? c.category;
+const lastSkill = (c: Course) => c.skills[c.skills.length - 1] ?? c.category;
+const firstModule = (c: Course) => c.syllabus[0]?.title ?? "the opening module";
+
+const reviewBodies = [
+  (c: Course) =>
+    `The ${firstSkill(c)} sections are the reason to take this. I'd tried two other ${c.category} courses before and this was the first one that explained why rather than just how. Budget more than the listed ${c.hours} hours if you actually do the exercises.`,
+  (c: Course) =>
+    `${c.instructor} moves fast but never skips the reasoning. I watched at 1.5x and still had to rewind the ${lastSkill(c)} material twice — in a good way.`,
+  (c: Course) =>
+    `Good structure, and the assignments are graded on real datasets instead of toy examples. Docked a star because a couple of the ${c.provider} platform videos are a year out of date.`,
+  (c: Course) =>
+    `Came in as a ${c.level.toLowerCase()} and that was the right call. The first module felt slow, then it earned it — by the end I'd shipped something I put in my portfolio.`,
+  (c: Course) =>
+    `Worth it for the ${firstSkill(c)} depth alone. I use about half of this at work now, and the notes are the ones I actually go back to.`,
+  (c: Course) =>
+    `Dense but fair. Do the ${firstModule(c).toLowerCase()} exercises properly before moving on or the later modules will hurt.`,
+] as const;
+
+const whenPool = [
+  "2 weeks ago",
+  "1 month ago",
+  "2 months ago",
+  "3 months ago",
+  "5 months ago",
+] as const;
+
+const seedOf = (s: string) => s.split("").reduce((n, ch) => n + ch.charCodeAt(0), 0);
+
+/** Deterministic pick from a non-empty list; the index wraps around. */
+function cycle<T>(items: readonly [T, ...T[]], index: number): T {
+  return items[Math.abs(index) % items.length] ?? items[0];
+}
+
+export function getReviews(courseId: string): Review[] {
+  const course = getCourse(courseId);
+  if (!course) return [];
+  const seed = seedOf(courseId);
+  return [0, 1, 2].map((i) => {
+    const reviewer = cycle(reviewers, seed + i * 3);
+    return {
+      id: `${courseId}-r${i}`,
+      name: reviewer.name,
+      role: reviewer.role,
+      rating: i === 2 && course.rating < 4.7 ? 4 : 5,
+      when: cycle(whenPool, seed + i * 2),
+      body: cycle(reviewBodies, seed + i * 2)(course),
+    };
+  });
+}
+
+/** Plausible star distribution (percentages, sums to 100) derived from the rating. */
+export function ratingBreakdown(course: Course): { stars: number; pct: number }[] {
+  const t = Math.min(1, Math.max(0, (course.rating - 4.4) / 0.5));
+  const five = Math.round(62 + t * 30);
+  const four = Math.round(24 - t * 18);
+  const three = Math.round(8 - t * 7);
+  const two = Math.round(4 - t * 3);
+  const one = Math.max(0, 100 - five - four - three - two);
+  return [
+    { stars: 5, pct: five },
+    { stars: 4, pct: four },
+    { stars: 3, pct: three },
+    { stars: 2, pct: two },
+    { stars: 1, pct: one },
+  ];
+}
+
+/** Where a course sits inside a learning path — powers "why this is in your path". */
+export function findCourseInPaths(courseId: string) {
+  for (const path of learningPaths) {
+    for (const milestone of path.milestones) {
+      const node = milestone.nodes.find((n) => n.courseId === courseId);
+      if (node) return { path, milestone, node };
+    }
+  }
+  return null;
+}
+
+/** Resolve a prerequisite label (e.g. "Python Basics") to a real course when possible. */
+export function findPrerequisiteCourse(label: string): Course | undefined {
+  const slug = label
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+  const lower = label.toLowerCase();
+  return (
+    courses.find((c) => c.id === slug) ??
+    courses.find((c) => c.title.toLowerCase().includes(lower)) ??
+    courses.find((c) => lower.includes(c.title.toLowerCase()))
+  );
+}
+
+function firstOf<T>(items: readonly T[], label: string): T {
+  const [head] = items;
+  if (head === undefined) throw new Error(`mock data: expected at least one ${label}`);
+  return head;
+}
+
+/** The path we fall back to when an id doesn't match — always defined. */
+export const defaultPath: LearningPath = firstOf(learningPaths, "learning path");
+
+/** Like getPath(), but guaranteed to return a path so pages never render empty. */
+export function getPathOrDefault(id: string): LearningPath {
+  return getPath(id) ?? defaultPath;
+}
