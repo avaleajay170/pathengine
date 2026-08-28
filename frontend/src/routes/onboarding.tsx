@@ -8,10 +8,26 @@ import { Progress } from "@/components/ui/progress";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, ArrowRight, Bot, Check, FileUp, Search, Sparkles, Wand2 } from "lucide-react";
+import {
+  AlertCircle,
+  ArrowLeft,
+  ArrowRight,
+  Bot,
+  Check,
+  FileUp,
+  Loader2,
+  Search,
+  Sparkles,
+  Wand2,
+} from "lucide-react";
 import { courses, type LearnerProfile } from "@/data/mock";
 import { useLearnerProfile } from "@/lib/learner-profile";
 import { generateLearningPath, pathIdForRole } from "@/lib/learning-path";
+import { useUploadTranscript, useTranscriptStatus } from "@/hooks/use-transcript";
+import { useCreateProfile } from "@/hooks/use-profile";
+import { useGeneratePath } from "@/hooks/use-generate-path";
+import { isApiEnabled } from "@/lib/api-client";
+import type { CreateProfileRequest } from "@/lib/types/api";
 
 export const Route = createFileRoute("/onboarding")({
   head: () => ({
@@ -52,7 +68,6 @@ const ROLES = [
 const ASSESSED_SKILLS = ["Python", "Statistics", "Machine Learning", "SQL", "Web Development"];
 const LEVELS = ["Beginner", "Intermediate", "Advanced"] as const;
 
-/** Slider positions are 0–2; anything out of range reads as Beginner. */
 const levelLabel = (position: number | undefined) => LEVELS[position ?? 0] ?? LEVELS[0];
 
 const FORMATS = [
@@ -68,7 +83,6 @@ const PACES = [
   { id: "intensive", label: "Intensive", detail: "Compress the timeline hard" },
 ] as const;
 
-// Static so the generation effect below has stable dependencies.
 const GENERATION_STEPS = [
   "Parsing your goal statement",
   "Scoring your skills against the role benchmark",
@@ -76,7 +90,6 @@ const GENERATION_STEPS = [
   "Fitting the plan to your weekly hours",
 ];
 
-/** Pick the mock path that best matches what the learner told us. */
 function matchRole(role: string, goalText: string): LearnerProfile["selectedRole"] {
   const t = `${role} ${goalText}`.toLowerCase();
   if (/machine learning|ml engineer|deep learning|ai engineer|data scientist|pytorch/.test(t)) {
@@ -91,20 +104,52 @@ function matchRole(role: string, goalText: string): LearnerProfile["selectedRole
   return "data-analyst";
 }
 
-function transcriptCourseIds(text: string): string[] {
+export function transcriptCourseIds(text: string): string[] {
   const normalized = text.toLowerCase();
   return courses
     .filter(
-      (course) =>
-        normalized.includes(course.title.toLowerCase()) ||
-        normalized.includes(course.id.toLowerCase()),
+      (c) =>
+        normalized.includes(c.title.toLowerCase()) ||
+        normalized.includes(c.id.toLowerCase()),
     )
-    .map((course) => course.id);
+    .map((c) => c.id);
+}
+
+function errorMessage(err: unknown): string {
+  if (err && typeof err === "object" && "message" in err) {
+    return String((err as { message: unknown }).message);
+  }
+  return "Something went wrong. Please try again.";
+}
+
+type UploadStatus = "idle" | "uploading" | "processing" | "completed" | "failed";
+
+export function buildProfilePayloadFromState(
+  profile: LearnerProfile,
+  role: string,
+  goalText: string,
+  targetPathTitle: string,
+  skillLevels: Record<string, number>,
+  priorCourses: string[],
+  hours: number,
+  formats: string[],
+  pace: string,
+): CreateProfileRequest {
+  return {
+    name: profile.name,
+    goal: goalText.trim() || `Become a ${role} and build a portfolio project.`,
+    targetRole: role || targetPathTitle,
+    skillLevels,
+    completedCourses: priorCourses,
+    hoursPerWeek: hours,
+    preferredFormats: formats,
+    pace: pace === "intensive" ? "fast" : pace === "relaxed" ? "slow" : "moderate",
+  };
 }
 
 function Onboarding() {
   const navigate = useNavigate();
-  const { profile, updateProfile } = useLearnerProfile();
+  const { profile, updateProfile, resetLearner } = useLearnerProfile();
   const [step, setStep] = useState(1);
 
   // Step 1
@@ -119,6 +164,10 @@ function Onboarding() {
   const [courseQuery, setCourseQuery] = useState("");
   const [uploadName, setUploadName] = useState("");
   const [uploadMessage, setUploadMessage] = useState("");
+  const [uploadStatus, setUploadStatus] = useState<UploadStatus>("idle");
+  const [uploadId, setUploadId] = useState<string | undefined>(undefined);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [confirmedParsedCourseIds, setConfirmedParsedCourseIds] = useState<string[]>([]);
   // Step 4
   const [hours, setHours] = useState(profile.hoursPerWeek);
   const [formats, setFormats] = useState<string[]>(
@@ -130,6 +179,13 @@ function Onboarding() {
   // Step 5
   const [generating, setGenerating] = useState(false);
   const [genStage, setGenStage] = useState(0);
+  const [generationError, setGenerationError] = useState<string | null>(null);
+
+  // API hooks
+  const uploadMutation = useUploadTranscript();
+  const transcriptStatus = useTranscriptStatus(uploadId);
+  const createProfileMutation = useCreateProfile();
+  const generatePathMutation = useGeneratePath();
 
   const selectedRole = useMemo(() => matchRole(role, goalText), [role, goalText]);
   const targetPathId = pathIdForRole(selectedRole);
@@ -149,9 +205,146 @@ function Onboarding() {
   const toggle = (list: string[], value: string) =>
     list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
 
-  // Run the mock generation sequence, then hand off to the roadmap.
+  // Gap 1: watch transcript polling result and transition uploadStatus
+  useEffect(() => {
+    const status = transcriptStatus.data?.status;
+    if (!status || status === "processing") return;
+    if (status === "completed") {
+      setUploadStatus("completed");
+    } else if (status === "failed") {
+      setUploadStatus("failed");
+      setUploadError(transcriptStatus.data?.error ?? "Transcript processing failed.");
+    }
+  }, [transcriptStatus.data?.status, transcriptStatus.data?.error]);
+
+  // Gap 1: file upload handler — API or existing simulation
+  async function handleFileUpload(file: File) {
+    setUploadName(file.name);
+    setUploadError(null);
+
+    if (!isApiEnabled) {
+      // Existing simulation — unchanged
+      if (
+        file.type === "text/csv" ||
+        file.type === "text/plain" ||
+        /\.(csv|txt)$/i.test(file.name)
+      ) {
+        const matched = transcriptCourseIds(await file.text());
+        setPriorCourses((current) => [...new Set([...current, ...matched])]);
+        setUploadMessage(
+          matched.length
+            ? `Found ${matched.length} matching course${matched.length === 1 ? "" : "s"}. Review the selected list below.`
+            : "No matching courses found. Select completed courses manually below.",
+        );
+      } else {
+        setUploadMessage("This file type needs manual course selection below.");
+      }
+      return;
+    }
+
+    setUploadStatus("uploading");
+    try {
+      const response = await uploadMutation.mutateAsync(file);
+      setUploadId(response.uploadId);
+      setUploadStatus("processing");
+    } catch (err) {
+      setUploadStatus("failed");
+      setUploadError(errorMessage(err));
+    }
+  }
+
+  // Gap 1/Task 2: merge confirmed parsed courses into priorCourses
+  function handleConfirmParsedCourses() {
+    setPriorCourses((current) => [...new Set([...current, ...confirmedParsedCourseIds])]);
+    setConfirmedParsedCourseIds([]);
+  }
+
+  // Gap 3: start over after duplicate generation
+  function handleStartOver() {
+    const ok = window.confirm(
+      "This will reset your profile and allow you to regenerate your learning path. Continue?",
+    );
+    if (ok) resetLearner();
+  }
+
+  function buildProfilePayload(): CreateProfileRequest {
+    return buildProfilePayloadFromState(
+      profile,
+      role,
+      goalText,
+      targetPath.title,
+      skillLevels,
+      priorCourses,
+      hours,
+      formats,
+      pace,
+    );
+  }
+
+  // Gaps 2 & 4: generation handler
+  async function handleGenerate() {
+    setGenerationError(null);
+
+    if (!isApiEnabled) {
+      updateProfile({
+        goal: goalText.trim() || `Become a ${role} and build a portfolio project.`,
+        targetRole: role || targetPath.title,
+        selectedRole,
+        hoursPerWeek: hours,
+        completedCourses: priorCourses,
+        skillLevels,
+        priorExperience: uploadName,
+        preferredFormats: formats,
+        pace: pace === "intensive" ? "fast" : pace === "relaxed" ? "slow" : "moderate",
+        onboardingComplete: true,
+      });
+      setGenStage(0);
+      setGenerating(true);
+      return;
+    }
+
+    // 1. Save profile
+    let profileId: string;
+    try {
+      const res = await createProfileMutation.mutateAsync(buildProfilePayload());
+      profileId = res.id;
+    } catch (err) {
+      setGenerationError(errorMessage(err));
+      return;
+    }
+
+    // 2. Update local state
+    updateProfile({
+      goal: goalText.trim() || `Become a ${role} and build a portfolio project.`,
+      targetRole: role || targetPath.title,
+      selectedRole,
+      hoursPerWeek: hours,
+      completedCourses: priorCourses,
+      skillLevels,
+      priorExperience: uploadName,
+      preferredFormats: formats,
+      pace: pace === "intensive" ? "fast" : pace === "relaxed" ? "slow" : "moderate",
+      onboardingComplete: true,
+    });
+
+    // 3. Show overlay then generate
+    setGenStage(0);
+    setGenerating(true);
+
+    try {
+      const path = await generatePathMutation.mutateAsync({ profileId, profile });
+      navigate({ to: "/path/$id", params: { id: path.id } });
+    } catch (err) {
+      setGenerating(false);
+      setGenStage(0);
+      setGenerationError(errorMessage(err));
+    }
+  }
+
+  // Offline mock generation sequence
   useEffect(() => {
     if (!generating) return;
+    if (isApiEnabled) return;
     const timers: number[] = [];
     for (let i = 1; i < GENERATION_STEPS.length; i++) {
       timers.push(window.setTimeout(() => setGenStage(i), i * 700));
@@ -165,6 +358,7 @@ function Onboarding() {
     return () => timers.forEach((t) => window.clearTimeout(t));
   }, [generating, navigate, targetPathId]);
 
+  // ── Generation overlay ──────────────────────────────────────────────────
   if (generating) {
     return (
       <main className="flex min-h-[calc(100vh-4rem)] items-center justify-center px-4 py-16">
@@ -176,7 +370,6 @@ function Onboarding() {
           <p className="mt-2 text-sm text-muted-foreground">
             Lumi is sequencing {targetPath.courses} courses around {hours} hrs/week.
           </p>
-
           <ol className="mt-8 space-y-3 text-left">
             {GENERATION_STEPS.map((label, i) => (
               <li key={label} className="flex items-center gap-3 text-sm">
@@ -201,16 +394,16 @@ function Onboarding() {
               </li>
             ))}
           </ol>
-
           <Progress value={((genStage + 1) / GENERATION_STEPS.length) * 100} className="mt-8" />
         </div>
       </main>
     );
   }
 
+  // ── Main wizard ─────────────────────────────────────────────────────────
   return (
     <main className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:py-14">
-      {/* Wizard progress */}
+      {/* Progress header */}
       <div>
         <div className="flex items-end justify-between">
           <div>
@@ -233,7 +426,7 @@ function Onboarding() {
       </div>
 
       <div className="mt-10 grid gap-8 lg:grid-cols-[14rem_minmax(0,1fr)]">
-        {/* Stepper */}
+        {/* Left stepper */}
         <nav aria-label="Onboarding steps" className="hidden lg:block">
           <ol className="space-y-1">
             {STEPS.map((s) => {
@@ -271,15 +464,15 @@ function Onboarding() {
           </ol>
         </nav>
 
-        {/* Active step */}
+        {/* Active step card */}
         <div className="surface-card p-6 sm:p-8">
+          {/* ── Step 1: Goal ── */}
           {step === 1 && (
             <section>
               <h2 className="text-xl font-bold tracking-tight">What are you working toward?</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 Pick a target role, or describe the goal in your own words — Lumi reads both.
               </p>
-
               <div className="mt-6 flex flex-wrap gap-2">
                 {ROLES.map((r) => (
                   <button
@@ -297,7 +490,6 @@ function Onboarding() {
                   </button>
                 ))}
               </div>
-
               <label htmlFor="goal" className="mt-8 block text-sm font-semibold text-foreground">
                 Describe your goal
               </label>
@@ -316,13 +508,13 @@ function Onboarding() {
             </section>
           )}
 
+          {/* ── Step 2: Skill level ── */}
           {step === 2 && (
             <section>
               <h2 className="text-xl font-bold tracking-tight">How would you rate yourself?</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 Rough is fine — a checkpoint quiz re-scores these properly once you start.
               </p>
-
               <div className="mt-8 space-y-7">
                 {ASSESSED_SKILLS.map((s) => (
                   <div key={s}>
@@ -352,6 +544,7 @@ function Onboarding() {
             </section>
           )}
 
+          {/* ── Step 3: Prior learning ── */}
           {step === 3 && (
             <section>
               <h2 className="text-xl font-bold tracking-tight">What have you already done?</h2>
@@ -359,47 +552,107 @@ function Onboarding() {
                 Anything you've finished gets credited, so the roadmap won't teach it twice.
               </p>
 
+              {/* Upload drop zone */}
               <label
                 htmlFor="history"
-                className="mt-6 flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-input bg-secondary/40 px-6 py-8 text-center transition-colors hover:bg-accent"
+                className={`mt-6 flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-input bg-secondary/40 px-6 py-8 text-center transition-colors ${
+                  uploadStatus === "uploading" || uploadStatus === "processing"
+                    ? "cursor-not-allowed opacity-60"
+                    : "hover:bg-accent"
+                }`}
               >
-                <FileUp className="size-6 text-muted-foreground" />
+                {uploadStatus === "uploading" || uploadStatus === "processing" ? (
+                  <Loader2 className="size-6 animate-spin text-muted-foreground" />
+                ) : (
+                  <FileUp className="size-6 text-muted-foreground" />
+                )}
                 <span className="mt-3 text-sm font-semibold">
                   {uploadName || "Upload a learning history"}
                 </span>
                 <span className="mt-1 text-xs text-muted-foreground">
-                  {uploadName
-                    ? uploadMessage
-                    : "CSV or plain-text transcript; PDF files require manual course selection."}
+                  {uploadStatus === "uploading"
+                    ? "Uploading…"
+                    : uploadStatus === "processing"
+                      ? "Analyzing transcript…"
+                      : uploadName
+                        ? uploadMessage || "File selected."
+                        : "CSV or plain-text transcript; PDF files require manual course selection."}
                 </span>
                 <input
                   id="history"
                   type="file"
                   className="sr-only"
                   accept=".csv,.txt,.pdf,text/csv,text/plain,application/pdf"
-                  onChange={async (e) => {
+                  disabled={uploadStatus === "uploading" || uploadStatus === "processing"}
+                  onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (!file) return;
-                    setUploadName(file.name);
-                    if (
-                      file.type === "text/csv" ||
-                      file.type === "text/plain" ||
-                      /\.(csv|txt)$/i.test(file.name)
-                    ) {
-                      const matched = transcriptCourseIds(await file.text());
-                      setPriorCourses((current) => [...new Set([...current, ...matched])]);
-                      setUploadMessage(
-                        matched.length
-                          ? `Found ${matched.length} matching course${matched.length === 1 ? "" : "s"}. Review the selected list below.`
-                          : "No matching courses found. Select completed courses manually below.",
-                      );
-                    } else {
-                      setUploadMessage("This file type needs manual course selection below.");
-                    }
+                    void handleFileUpload(file);
                   }}
                 />
               </label>
 
+              {/* Upload error */}
+              {uploadStatus === "failed" && uploadError && (
+                <div
+                  role="alert"
+                  className="mt-3 flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2.5 text-sm text-destructive"
+                >
+                  <AlertCircle className="mt-0.5 size-4 shrink-0" />
+                  <span>{uploadError} Manual course selection is still available below.</span>
+                </div>
+              )}
+
+              {/* Parsed courses confirmation (Gap 1 / Task 2) */}
+              {uploadStatus === "completed" &&
+                transcriptStatus.data?.parsedCourses &&
+                transcriptStatus.data.parsedCourses.length > 0 && (
+                  <div className="mt-4 rounded-xl border border-border p-4">
+                    <p className="text-sm font-semibold">Parsed from your transcript</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      Check the courses you want to credit.
+                    </p>
+                    <ul className="mt-3 space-y-1">
+                      {transcriptStatus.data.parsedCourses.map((pc) => {
+                        const id = pc.matchedCourseId ?? pc.title;
+                        return (
+                          <li key={id}>
+                            <label className="flex cursor-pointer items-start gap-3 rounded-lg p-2 transition-colors hover:bg-muted">
+                              <Checkbox
+                                className="mt-0.5"
+                                checked={confirmedParsedCourseIds.includes(id)}
+                                onCheckedChange={() =>
+                                  setConfirmedParsedCourseIds((prev) =>
+                                    prev.includes(id)
+                                      ? prev.filter((x) => x !== id)
+                                      : [...prev, id],
+                                  )
+                                }
+                              />
+                              <span className="min-w-0">
+                                <span className="block text-sm font-medium">{pc.title}</span>
+                                <span className="block text-xs text-muted-foreground">
+                                  Confidence: {Math.round(pc.confidence * 100)}%
+                                </span>
+                              </span>
+                            </label>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                    <Button
+                      size="sm"
+                      className="mt-3"
+                      onClick={handleConfirmParsedCourses}
+                      disabled={confirmedParsedCourseIds.length === 0}
+                    >
+                      <Check className="size-3.5" />
+                      Confirm selected ({confirmedParsedCourseIds.length})
+                    </Button>
+                  </div>
+                )}
+
+              {/* Manual course selection (always available) */}
               <div className="mt-8">
                 <p className="text-sm font-semibold">Or tag courses you've completed</p>
                 <div className="relative mt-3">
@@ -412,9 +665,7 @@ function Onboarding() {
                     className="pl-9"
                   />
                 </div>
-
                 <p className="mt-3 text-xs text-muted-foreground">{priorCourses.length} selected</p>
-
                 <ul className="mt-2 max-h-72 space-y-1 overflow-y-auto rounded-xl border border-border p-2">
                   {filteredCourses.map((c) => (
                     <li key={c.id}>
@@ -443,13 +694,13 @@ function Onboarding() {
             </section>
           )}
 
+          {/* ── Step 4: Preferences ── */}
           {step === 4 && (
             <section>
               <h2 className="text-xl font-bold tracking-tight">How do you like to learn?</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 This sets the shape of the plan — hours, formats and how hard we compress it.
               </p>
-
               <div className="mt-8">
                 <div className="flex items-center justify-between">
                   <label htmlFor="hours" className="text-sm font-semibold">
@@ -471,7 +722,6 @@ function Onboarding() {
                   <span>25 hrs</span>
                 </div>
               </div>
-
               <div className="mt-8">
                 <p className="text-sm font-semibold">Preferred content</p>
                 <div className="mt-3 flex flex-wrap gap-2">
@@ -492,7 +742,6 @@ function Onboarding() {
                   ))}
                 </div>
               </div>
-
               <div className="mt-8">
                 <p className="text-sm font-semibold">Pace</p>
                 <RadioGroup value={pace} onValueChange={setPace} className="mt-3 gap-3">
@@ -518,12 +767,50 @@ function Onboarding() {
             </section>
           )}
 
+          {/* ── Step 5: Summary ── */}
           {step === 5 && (
             <section>
               <h2 className="text-xl font-bold tracking-tight">Does this look right?</h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 Lumi will generate a roadmap from these answers. You can change any of it later.
               </p>
+
+              {/* Generation error (Gap 2) */}
+              {generationError && (
+                <div
+                  role="alert"
+                  className="mt-4 flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2.5 text-sm text-destructive"
+                >
+                  <AlertCircle className="mt-0.5 size-4 shrink-0" />
+                  <span>{generationError}</span>
+                </div>
+              )}
+
+              {/* Duplicate generation notice (Gap 3) */}
+              {profile.onboardingComplete && (
+                <div
+                  role="status"
+                  className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-300/50 bg-amber-50 px-4 py-3 dark:border-amber-700/40 dark:bg-amber-950/30"
+                >
+                  <p className="text-sm text-amber-800 dark:text-amber-200">
+                    You've already generated a learning path.{" "}
+                    <a
+                      href={`/path/${targetPathId}`}
+                      className="font-semibold underline underline-offset-2 hover:no-underline"
+                    >
+                      View your path
+                    </a>
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleStartOver}
+                    className="border-amber-400 text-amber-800 hover:bg-amber-100 dark:border-amber-600 dark:text-amber-200 dark:hover:bg-amber-900/40"
+                  >
+                    Start over
+                  </Button>
+                </div>
+              )}
 
               <dl className="mt-6 divide-y divide-border">
                 <div className="flex gap-4 py-3">
@@ -604,22 +891,8 @@ function Onboarding() {
               <Button
                 size="lg"
                 className="gradient-ai"
-                onClick={() => {
-                  updateProfile({
-                    goal: goalText.trim() || `Become a ${role} and build a portfolio project.`,
-                    targetRole: role || targetPath.title,
-                    selectedRole,
-                    hoursPerWeek: hours,
-                    completedCourses: priorCourses,
-                    skillLevels,
-                    priorExperience: uploadName,
-                    preferredFormats: formats,
-                    pace: pace === "intensive" ? "fast" : pace === "relaxed" ? "slow" : "moderate",
-                    onboardingComplete: true,
-                  });
-                  setGenStage(0);
-                  setGenerating(true);
-                }}
+                disabled={generating || profile.onboardingComplete}
+                onClick={() => void handleGenerate()}
               >
                 <Wand2 className="size-4" />
                 Generate my learning path
@@ -641,3 +914,4 @@ function Onboarding() {
     </main>
   );
 }
+

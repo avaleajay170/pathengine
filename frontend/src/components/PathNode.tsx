@@ -19,6 +19,7 @@ import {
 import type { PathNodeItem } from "@/data/mock";
 import { useAssistant } from "@/lib/assistant";
 import { useLearnerProfile } from "@/lib/learner-profile";
+import { useCompleteNode } from "@/hooks/use-complete-node";
 
 const statusMeta = {
   completed: { label: "Completed", icon: CheckCircle2, cls: "bg-success text-success-foreground" },
