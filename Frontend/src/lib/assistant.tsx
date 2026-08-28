@@ -10,6 +10,7 @@ import {
 import { courses, type Course, type LearnerProfile } from "@/data/mock";
 import { generateLearningPath } from "@/lib/learning-path";
 import { useLearnerProfile } from "@/lib/learner-profile";
+import { useAssistantMessage } from "@/hooks/use-assistant";
 
 export interface ChatMessage {
   id: string;
@@ -106,6 +107,7 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [thinking, setThinking] = useState(false);
   const requestId = useRef(0);
+  const assistantMessageMutation = useAssistantMessage();
 
   const respond = useCallback((reply: ChatMessage) => {
     const currentRequest = ++requestId.current;
@@ -119,10 +121,45 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
   const send = useCallback(
     (text: string) => {
       if (!text.trim()) return;
-      setMessages((m) => [...m, { id: nextId(), role: "user", content: text }]);
-      respond(mockReply(text, profile));
+      const userMessage = { id: nextId(), role: "user" as const, content: text };
+      setMessages((m) => [...m, userMessage]);
+
+      // Try backend first, fall back to mock
+      assistantMessageMutation.mutate(
+        { message: text, context: {} },
+        {
+          onSuccess: (data) => {
+            setMessages((m) => [
+              ...m,
+              {
+                id: data.id,
+                role: data.role,
+                content: data.content,
+                courseId: data.courseId,
+                milestone: data.milestone,
+              },
+            ]);
+          },
+          onError: (error: any) => {
+            // Fall back to mock response if API fails or is disabled
+            if (error?.message === "API_DISABLED" || error?.status === 0) {
+              respond(mockReply(text, profile));
+            } else {
+              // Show error to user
+              setMessages((m) => [
+                ...m,
+                {
+                  id: nextId(),
+                  role: "assistant",
+                  content: "I'm having trouble connecting right now. Please try again.",
+                },
+              ]);
+            }
+          },
+        }
+      );
     },
-    [profile, respond],
+    [profile, respond, assistantMessageMutation]
   );
 
   const explain = useCallback(

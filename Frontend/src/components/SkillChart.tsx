@@ -17,6 +17,7 @@ import {
 import { skillTrend } from "@/data/mock";
 import type { LearnerProfile } from "@/data/mock";
 import { useLearnerProfile } from "@/lib/learner-profile";
+import { useSkillHistory } from "@/hooks/use-activity";
 
 function SkillTable({
   caption,
@@ -136,11 +137,22 @@ export function SkillGapBars({ height = 240 }: { height?: number }) {
 }
 
 export function SkillTrend({ height = 260 }: { height?: number }) {
+  const { data, isLoading } = useSkillHistory();
+  const skillData = data?.data ?? skillTrend;
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center" style={{ height }}>
+        <p className="text-sm text-muted-foreground">Loading skill history...</p>
+      </div>
+    );
+  }
+
   return (
     <div>
       <div role="img" aria-label="Line chart showing skill progression over time">
         <ResponsiveContainer width="100%" height={height}>
-          <LineChart data={skillTrend}>
+          <LineChart data={skillData}>
             <CartesianGrid stroke="var(--color-border)" vertical={false} />
             <XAxis
               dataKey="month"
@@ -173,7 +185,7 @@ export function SkillTrend({ height = 260 }: { height?: number }) {
           </LineChart>
         </ResponsiveContainer>
       </div>
-      <SkillTable caption="Monthly skill progression" rows={skillTrend} />
+      <SkillTable caption="Monthly skill progression" rows={skillData} />
     </div>
   );
 }

@@ -1,5 +1,10 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { LearnerProfile } from "@/data/mock";
+import { useUpdateProfile } from "@/hooks/use-profile";
+import { useEnroll } from "@/hooks/use-enroll";
+import { useCompleteNode } from "@/hooks/use-complete-node";
+import { useFeedback } from "@/hooks/use-feedback";
+import { isApiEnabled } from "@/lib/api-client";
 
 const STORAGE_KEY = "lumina-learner";
 const STORAGE_VERSION = 1;
@@ -82,6 +87,8 @@ const LearnerProfileContext = createContext<LearnerProfileContextValue | null>(n
 
 export function LearnerProfileProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<LearnerProfile>(loadProfile);
+  const updateProfileMutation = useUpdateProfile();
+  const enrollMutation = useEnroll();
 
   useEffect(() => {
     try {
@@ -96,6 +103,11 @@ export function LearnerProfileProvider({ children }: { children: ReactNode }) {
 
   const updateProfile = (updates: Partial<LearnerProfile>) => {
     setProfile((current) => ({ ...current, ...updates }));
+    
+    // Sync to backend if API is enabled
+    if (isApiEnabled) {
+      updateProfileMutation.mutate(updates);
+    }
   };
 
   const enrollCourse = (courseId: string) => {
@@ -104,6 +116,11 @@ export function LearnerProfileProvider({ children }: { children: ReactNode }) {
         ? current
         : { ...current, enrolledCourses: [...current.enrolledCourses, courseId] },
     );
+    
+    // Sync to backend if API is enabled
+    if (isApiEnabled) {
+      enrollMutation.mutate(courseId);
+    }
   };
 
   const completeCourse = (courseId: string) => {
@@ -116,6 +133,8 @@ export function LearnerProfileProvider({ children }: { children: ReactNode }) {
         ? current.enrolledCourses
         : [...current.enrolledCourses, courseId],
     }));
+    
+    // Backend sync happens via completeNode
   };
 
   const completeNode = (nodeId: string, courseId?: string) => {
@@ -130,6 +149,8 @@ export function LearnerProfileProvider({ children }: { children: ReactNode }) {
           }
         : {}),
     }));
+    
+    // Backend sync would need pathId - handled at component level with useCompleteNode hook
   };
 
   const addToPath = (courseId: string) => {
@@ -138,6 +159,11 @@ export function LearnerProfileProvider({ children }: { children: ReactNode }) {
         ? current
         : { ...current, addedCourseIds: [...current.addedCourseIds, courseId] },
     );
+    
+    // Sync to backend if API is enabled
+    if (isApiEnabled) {
+      updateProfileMutation.mutate({ addedCourseIds: [...profile.addedCourseIds, courseId] });
+    }
   };
 
   const submitNodeFeedback = (nodeId: string, feedback: LearnerProfile["nodeFeedback"][string]) => {
@@ -145,6 +171,8 @@ export function LearnerProfileProvider({ children }: { children: ReactNode }) {
       ...current,
       nodeFeedback: { ...current.nodeFeedback, [nodeId]: feedback },
     }));
+    
+    // Backend sync would need pathId - handled at component level with useFeedback hook
   };
 
   const resetLearner = () => setProfile(emptyLearnerProfile);
