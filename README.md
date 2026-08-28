@@ -1,225 +1,126 @@
-AI Career Path Engine
+# Path Finder AI
 
-AI Career Path Engine is a full-stack application designed to help users explore and plan career paths using AI-powered guidance. The project combines a Python backend, a web frontend, MongoDB Atlas for persistent data, and configurable LLM providers.
+Build a professional, Coursera-inspired web app frontend for an AI-Powered Personalized Learning Path Recommender. This is a hackathon prototype, so use realistic mock/dummy data throughout (no real backend needed yet, but structure state/data so it's easy to swap in real APIs later). Use React + Tailwind CSS + shadcn/ui components. Prioritize a clean, trustworthy, edtech aesthetic — generous whitespace, soft shadows, rounded cards, a confident color system, and smooth micro-interactions.
 
-Project status: Active development / foundation setup
+Design System
 
-Tech Stack
+Primary color: deep blue (#0056D2-ish, Coursera-like) with a secondary accent (teal or violet) for AI/assistant elements to visually distinguish "AI" moments from static content.
 
-Backend
+Neutral grays for backgrounds, dark slate for text.
 
-Python 3.12
+Font: a clean sans-serif (Inter or similar), clear type hierarchy (large bold headings, readable body text).
 
-FastAPI / Python application backend
+Rounded-xl cards, subtle hover elevation, consistent 8px spacing grid.
 
-Motor (motor.motor_asyncio) for asynchronous MongoDB access
+Include a light/dark mode toggle if feasible, but light mode is the priority.
 
-python-dotenv for environment configuration
+Pages / Routes to Build
 
-MongoDB Atlas
+1. Landing Page (/)
 
-Frontend
+Sticky top navbar: logo, nav links (Explore Courses, Paths, Dashboard, Pricing/About), Sign In / Get Started buttons.
 
-JavaScript/TypeScript web frontend
+Hero section: bold headline about AI-personalized learning, subheading, a prominent CTA input like "What do you want to learn today?" (this doubles as the entry point into the conversational goal-setting flow) plus a "Get my learning path" button.
 
-Source code located under frontend/src
+Trust strip: logos or stats (e.g., "10,000+ learners", "500+ courses", "98% goal completion").
 
-Reusable UI components under frontend/src/components
+Explore Courses section: a searchable/filterable grid of course cards (title, provider/instructor, thumbnail, rating, level tag, duration, price/free badge). Include category filter chips (Data Science, Web Dev, AI/ML, Design, Business, etc.) and a search bar.
 
-Application pages under frontend/src/pages
+Featured Learning Paths section: horizontally scrollable cards showing pre-built paths (e.g., "Become a Data Analyst") with number of courses, estimated duration, and skill level.
 
-AI / LLM
+"How it works" 3-4 step visual section explaining: Tell us your goal → AI analyzes your profile → Get a personalized roadmap → Track progress.
 
-The backend is configured to support a primary LLM provider and a fallback provider through environment variables.
+Testimonials/social proof section.
 
-Current configuration supports:
+Footer with links, socials, newsletter signup.
 
-Sarvam AI as a primary provider
+2. Onboarding / Learner Profiling Flow (/onboarding)
 
-OpenAI as a fallback provider
+Multi-step wizard (progress bar at top) capturing the learner profiling engine:
 
-The exact models and AI workflow will be documented as the project implementation is finalized.
+Step 1: Career goal / interest selection (chips + free text field for natural language goal input, e.g., "I want to become a machine learning engineer in 6 months").
 
-Project Structure
+Step 2: Current skill level self-assessment (beginner/intermediate/advanced per relevant skill, shown as sliders or radio cards).
 
-pathengine/
-├── backend/
-│   ├── app/                  # Backend application
-│   ├── config.py             # Application/configuration settings
-│   ├── db.py                 # MongoDB/database integration
-│   ├── test_connection.py   # MongoDB connection test
-│   ├── requirements.txt      # Python dependencies
-│   ├── .env.example          # Environment variable template
-│   └── .env                  # Local secrets - DO NOT COMMIT
-│
-├── frontend/
-│   └── src/
-│       ├── components/       # Reusable frontend components
-│       └── pages/            # Application pages
-│
-├── data/                     # Local/project data
-├── .gitignore
-└── README.md
+Step 3: Prior learning history — let user tag/select completed courses or upload a "learning history" (mock file upload + a searchable multiselect of common courses).
 
-Prerequisites
+Step 4: Learning preferences — time availability per week, preferred content format (video, reading, hands-on projects), pace.
 
-Install the following before running the project:
+Step 5: Summary screen showing an "AI is generating your path..." animated loading state, then redirect to the Path page.
 
-Python 3.12+
+3. Conversational AI Assistant (persistent + dedicated view)
 
-Node.js and npm
+A floating chat bubble available on every page (bottom-right) that opens a chat panel — this is the conversational interface for describing goals in natural language and asking questions.
 
-Git
+Also build a dedicated /assistant full-page chat view with a clean chat UI: message bubbles, suggested prompt chips ("Why was this course recommended?", "I want to switch to backend development", "Adjust my pace"), typing indicator, and inline rich responses (e.g., the assistant can render a mini course-card or milestone-card directly inside a chat message when explaining a recommendation).
 
-A MongoDB Atlas account
+Every recommended course/step anywhere in the app should have a small "Why this?" button that opens the assistant with a pre-filled explanation bubble (mock a reasoning explanation referencing the learner's goal, skill gap, and prior courses).
 
-API credentials for the configured AI providers
+4. Learning Path / Roadmap Page (/path/:id)
 
-Backend Setup
+The core path generator visualization:
 
-1. Clone the repository
+Header: path title, goal description, overall progress %, estimated completion date, "Adjust path" button.
 
-git clone https://github.com/avaleajay170/pathengine.git
-cd pathengine
+Vertical/timeline roadmap UI showing stages grouped by milestone (e.g., "Foundations" → "Core Skills" → "Specialization" → "Capstone Project"), with:
 
-2. Create and activate a virtual environment
+Course/project/assessment nodes as cards, connected by a visual path line.
 
-Windows:
+Status indicators per node: locked (prerequisite not met), available, in-progress, completed.
 
-cd backend
-python -m venv venv
-venv\Scripts\activate
+Prerequisite tooltips ("Requires: Python Basics").
 
-3. Install Python dependencies
+Each node expandable to show description, duration, skills gained, and a "Why recommended" link.
 
-pip install -r requirements.txt
+Sidebar: skill-gap radar/bar chart (current vs. target skill levels), milestone checklist, "adapt my path" feedback control (e.g., thumbs up/down or "too easy / too hard / not interested" buttons per node feeding into an "adapting..." toast/animation).
 
-4. Configure environment variables
+5. Dashboard (/dashboard)
 
-Create:
+Top summary cards: overall progress %, current streak, hours learned, skills mastered.
 
-backend/.env
+Skill development chart (radar or bar chart comparing skills over time / vs. goal).
 
-Use backend/.env.example as the template.
+Milestone timeline/progress tracker.
 
-Example:
+"Next recommended actions" list (2-3 upcoming courses/tasks with quick-start buttons).
 
-MONGODB_URI=mongodb+srv://<database-user>:<database-password>@<cluster-host>/?retryWrites=true&w=majority&appName=Cluster0
-MONGODB_DB_NAME=trajectory
+Recent activity feed.
 
-LLM_PROVIDER=sarvam
-LLM_API_KEY=<your-sarvam-api-key>
-LLM_FALLBACK_PROVIDER=openai
-LLM_FALLBACK_API_KEY=<your-openai-api-key>
+Course-in-progress cards with progress bars and "Continue" buttons.
 
-Never commit backend/.env or any file containing API keys, passwords, or other secrets.
+6. Course Detail Page (/course/:id)
 
-MongoDB Atlas
+Course hero (title, provider, rating, level, duration, price/free).
 
-The project uses MongoDB Atlas as its database service.
+Tabs: Overview, Syllabus, Reviews.
 
-The development configuration currently uses:
+Sidebar: "Why this is in your path" AI explanation card, prerequisites, related courses.
 
-Atlas Free Tier (M0)
+Enroll / Add to Path button.
 
-AWS Mumbai region (ap-south-1)
+Cross-Cutting Requirements
 
-Asynchronous MongoDB access through Motor
+Use realistic dummy data for at least 15-20 courses across 4-5 categories, 2-3 sample learning paths, and a sample learner profile.
 
-To verify the database connection:
+All AI-generated content (recommendations, explanations, chat replies) should be clearly mocked with believable, specific-sounding text (reference the learner's stated goal and skill gaps) rather than generic placeholder text.
 
-cd backend
-python test_connection.py
+Responsive design: must look polished on both desktop and mobile.
 
-A successful connection should print:
+Use icons (lucide-react) consistently for skills, categories, and status indicators.
 
-Connected to MongoDB Atlas successfully!
-Using database: <database-name>
+Add subtle loading/skeleton states wherever "AI is thinking" would realistically occur.
 
-Frontend Setup
+Keep component structure modular (Navbar, CourseCard, PathNode, ChatWidget, SkillChart, MilestoneTracker, etc.) so it's easy to extend.
 
-From the project root:
+Build this as a multi-page app with working navigation between all routes described above. Start with the Landing Page and Learning Path page as the highest-fidelity screens since they'll make the strongest first impression, then fill in the rest.
 
-cd frontend
-npm install
+## Development
 
-Start the frontend using the development script defined in frontend/package.json:
+Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
 
+```sh
+git clone <this-repository-url>
+cd <repository-name>
+npm i
 npm run dev
-
-If the frontend uses a different script, use the corresponding command from package.json.
-
-Environment and Security
-
-The following files/directories should remain local and must not be pushed to GitHub:
-
-.env
-.env.*
-venv/
-.venv/
-__pycache__/
-node_modules/
-
-An example environment file should contain variable names and safe placeholder values only.
-
-Development Workflow
-
-A typical development workflow is:
-
-Start MongoDB Atlas.
-
-Configure backend/.env.
-
-Activate the Python virtual environment.
-
-Start the backend application.
-
-Start the frontend development server.
-
-Test the MongoDB connection before debugging application-level database features.
-
-Keep secrets out of Git.
-
-Roadmap
-
-The project documentation and implementation roadmap will be expanded to cover:
-
-Core product workflow
-
-Career-path recommendation logic
-
-AI/LLM orchestration
-
-User data and database schema
-
-API endpoints
-
-Frontend user flows
-
-Authentication and authorization
-
-Error handling and validation
-
-Testing
-
-Deployment
-
-Future enhancements
-
-Contributing
-
-Create a feature branch.
-
-Make focused changes.
-
-Test the backend and frontend locally.
-
-Do not commit secrets or generated environments.
-
-Commit with a clear message.
-
-Push the branch and open a pull request.
-
-License
-
-License information will be added when the project license is finalized.
+```
