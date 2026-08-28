@@ -40,31 +40,28 @@ const kindIcon = {
 export function PathNode({ node }: { node: PathNodeItem }) {
   const [open, setOpen] = useState(false);
   const { explain } = useAssistant();
-  const { completeNode, submitNodeFeedback } = useLearnerProfile();
+  const { completeNode, submitNodeFeedback, updateProfile } = useLearnerProfile();
   const meta = statusMeta[node.status];
   const KindIcon = kindIcon[node.kind];
   const StatusIcon = meta.icon;
 
   const adapt = (signal: "good fit" | "too easy") => {
-    toast("Adapting your path…", {
-      description: `Lumi is re-sequencing "${node.title}" after your “${signal}” feedback.`,
+    submitNodeFeedback(node.id, signal === "too easy" ? "too-easy" : "useful");
+    if (signal === "too easy") updateProfile({ pace: "fast" });
+    toast.success("Feedback saved", {
+      description:
+        signal === "too easy"
+          ? "Your pace is now set to fast for future path updates."
+          : "Lumi will keep this level in your path.",
     });
-    window.setTimeout(
-      () =>
-        toast.success("Path updated", {
-          description:
-            signal === "too easy"
-              ? "Replaced with an advanced checkpoint — 12 hours saved this month."
-              : "Marked as a good fit — Lumi will keep this level in your path.",
-        }),
-      1400,
-    );
   };
 
   return (
     <div className="relative pl-10">
       <span
         className={`absolute left-0 flex size-8 items-center justify-center rounded-full ring-4 ring-background ${meta.cls}`}
+        role="img"
+        aria-label={`Status: ${meta.label}`}
       >
         <StatusIcon className="size-4" />
       </span>
@@ -136,7 +133,13 @@ export function PathNode({ node }: { node: PathNodeItem }) {
             <Sparkle className="size-4" />
             Why this?
           </Button>
-          <Button size="sm" variant="ghost" onClick={() => setOpen((o) => !o)}>
+          <Button
+            size="sm"
+            variant="ghost"
+            aria-expanded={open}
+            aria-controls={`node-details-${node.id}`}
+            onClick={() => setOpen((o) => !o)}
+          >
             Details
             <ChevronDown className={`size-4 transition-transform ${open ? "rotate-180" : ""}`} />
           </Button>
@@ -168,7 +171,10 @@ export function PathNode({ node }: { node: PathNodeItem }) {
         </div>
 
         {open && (
-          <div className="mt-4 rounded-xl border border-ai/25 bg-ai-soft p-4 text-sm">
+          <div
+            id={`node-details-${node.id}`}
+            className="mt-4 rounded-xl border border-ai/25 bg-ai-soft p-4 text-sm"
+          >
             <p className="font-semibold text-ai-foreground">Why Lumi placed this here</p>
             <p className="mt-1 text-ai-foreground/85">{node.reason}</p>
           </div>

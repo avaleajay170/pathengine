@@ -93,10 +93,7 @@ function PathPage() {
     if (activeNode) submitNodeFeedback(activeNode.id, feedback);
     if (signal === "too easy") updateProfile({ pace: "fast" });
     if (signal === "too hard") updateProfile({ pace: "slow" });
-    toast("Adapting your path…", {
-      description: `Lumi is re-scoring every remaining node against “${signal}”.`,
-    });
-    window.setTimeout(() => toast.success("Path updated", { description: outcome }), 1400);
+    toast.success("Feedback saved", { description: outcome });
   };
 
   return (

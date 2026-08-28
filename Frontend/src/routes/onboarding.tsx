@@ -91,6 +91,17 @@ function matchRole(role: string, goalText: string): LearnerProfile["selectedRole
   return "data-analyst";
 }
 
+function transcriptCourseIds(text: string): string[] {
+  const normalized = text.toLowerCase();
+  return courses
+    .filter(
+      (course) =>
+        normalized.includes(course.title.toLowerCase()) ||
+        normalized.includes(course.id.toLowerCase()),
+    )
+    .map((course) => course.id);
+}
+
 function Onboarding() {
   const navigate = useNavigate();
   const { profile, updateProfile } = useLearnerProfile();
@@ -107,6 +118,7 @@ function Onboarding() {
   const [priorCourses, setPriorCourses] = useState<string[]>([]);
   const [courseQuery, setCourseQuery] = useState("");
   const [uploadName, setUploadName] = useState("");
+  const [uploadMessage, setUploadMessage] = useState("");
   // Step 4
   const [hours, setHours] = useState(profile.hoursPerWeek);
   const [formats, setFormats] = useState<string[]>(
@@ -298,8 +310,8 @@ function Onboarding() {
                 placeholder="e.g. I want to become a machine learning engineer in 6 months — I can code a little Python but I've never trained a model."
               />
               <p className="mt-2 text-xs text-muted-foreground">
-                Timeframes, constraints and current job all help. Nothing here is required except
-                one of the two.
+                Timeframes, constraints and current job all help. Pick a role or describe a goal to
+                continue.
               </p>
             </section>
           )}
@@ -357,14 +369,34 @@ function Onboarding() {
                 </span>
                 <span className="mt-1 text-xs text-muted-foreground">
                   {uploadName
-                    ? "Parsed 14 completed courses from your transcript"
-                    : "CSV or PDF transcript from Coursera, Udemy or edX"}
+                    ? uploadMessage
+                    : "CSV or plain-text transcript; PDF files require manual course selection."}
                 </span>
                 <input
                   id="history"
                   type="file"
                   className="sr-only"
-                  onChange={(e) => setUploadName(e.target.files?.[0]?.name ?? "")}
+                  accept=".csv,.txt,.pdf,text/csv,text/plain,application/pdf"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    setUploadName(file.name);
+                    if (
+                      file.type === "text/csv" ||
+                      file.type === "text/plain" ||
+                      /\.(csv|txt)$/i.test(file.name)
+                    ) {
+                      const matched = transcriptCourseIds(await file.text());
+                      setPriorCourses((current) => [...new Set([...current, ...matched])]);
+                      setUploadMessage(
+                        matched.length
+                          ? `Found ${matched.length} matching course${matched.length === 1 ? "" : "s"}. Review the selected list below.`
+                          : "No matching courses found. Select completed courses manually below.",
+                      );
+                    } else {
+                      setUploadMessage("This file type needs manual course selection below.");
+                    }
+                  }}
                 />
               </label>
 
@@ -609,8 +641,7 @@ function Onboarding() {
       </div>
 
       <p className="mt-8 text-center text-xs text-muted-foreground">
-        Prototype: answers are held in memory for this session and drive the mock roadmap for{" "}
-        {profile.name}.
+        Your answers are saved locally on this device and drive the roadmap for {profile.name}.
       </p>
     </main>
   );

@@ -140,10 +140,15 @@ function RootComponent() {
         <AssistantProvider>
           <div className="flex min-h-screen flex-col">
             <Navbar />
-            {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-            <div className="flex-1">
+            <a
+              href="#main-content"
+              className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-background focus:px-4 focus:py-2 focus:text-foreground focus:shadow-lg"
+            >
+              Skip to main content
+            </a>
+            <main id="main-content" className="flex-1">
               <Outlet />
-            </div>
+            </main>
           </div>
           <ChatWidget />
           <Toaster position="top-right" richColors />

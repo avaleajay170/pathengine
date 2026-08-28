@@ -31,12 +31,40 @@ function loadProfile(): LearnerProfile {
     const parsed: unknown = JSON.parse(raw);
     if (!parsed || typeof parsed !== "object" || !("data" in parsed)) return emptyLearnerProfile;
     const data = (parsed as { data?: unknown }).data;
-    if (!data || typeof data !== "object") return emptyLearnerProfile;
-    return { ...emptyLearnerProfile, ...(data as Partial<LearnerProfile>) };
+    if (!isProfileData(data)) return emptyLearnerProfile;
+    return {
+      ...emptyLearnerProfile,
+      ...data,
+      skillLevels: { ...emptyLearnerProfile.skillLevels, ...data.skillLevels },
+      preferredFormats: [...(data.preferredFormats ?? [])],
+      completedCourses: [...data.completedCourses],
+      enrolledCourses: [...data.enrolledCourses],
+      addedCourseIds: [...data.addedCourseIds],
+      nodeStatuses: { ...data.nodeStatuses },
+      nodeFeedback: { ...data.nodeFeedback },
+    };
   } catch (error) {
     console.error("Unable to read learner profile", error);
     return emptyLearnerProfile;
   }
+}
+
+function isProfileData(
+  value: unknown,
+): value is Partial<LearnerProfile> &
+  Pick<LearnerProfile, "completedCourses" | "enrolledCourses" | "addedCourseIds"> {
+  if (!value || typeof value !== "object") return false;
+  const data = value as Partial<LearnerProfile>;
+  return (
+    typeof data.goal === "string" &&
+    typeof data.targetRole === "string" &&
+    Array.isArray(data.completedCourses) &&
+    Array.isArray(data.enrolledCourses) &&
+    Array.isArray(data.addedCourseIds) &&
+    data.completedCourses.every((courseId) => typeof courseId === "string") &&
+    data.enrolledCourses.every((courseId) => typeof courseId === "string") &&
+    data.addedCourseIds.every((courseId) => typeof courseId === "string")
+  );
 }
 
 type LearnerProfileContextValue = {

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { emptyLearnerProfile } from "@/lib/learner-profile";
 import { generateLearningPath } from "@/lib/learning-path";
+import type { PathNodeItem } from "@/data/mock";
+import { completedHours } from "@/routes/dashboard";
 
 describe("generateLearningPath", () => {
   it("generates a role-specific roadmap", () => {
@@ -47,5 +49,31 @@ describe("generateLearningPath", () => {
     };
     const path = generateLearningPath(profile);
     expect(path.progress).toBeGreaterThan(0);
+  });
+
+  it("calculates learned hours from completed node durations", () => {
+    const nodes = [
+      {
+        id: "a",
+        kind: "course",
+        title: "A",
+        duration: "12 hrs",
+        status: "completed",
+        skills: [],
+        description: "",
+        reason: "",
+      },
+      {
+        id: "b",
+        kind: "project",
+        title: "B",
+        duration: "6 hrs",
+        status: "available",
+        skills: [],
+        description: "",
+        reason: "",
+      },
+    ] as PathNodeItem[];
+    expect(completedHours(nodes)).toBe(12);
   });
 });
