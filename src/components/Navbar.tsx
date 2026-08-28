@@ -15,7 +15,11 @@ const links = [
 function ThemeToggle() {
   const [dark, setDark] = useState(false);
   useEffect(() => {
+    setDark(localStorage.getItem("lumina-theme") === "dark");
+  }, []);
+  useEffect(() => {
     document.documentElement.classList.toggle("dark", dark);
+    localStorage.setItem("lumina-theme", dark ? "dark" : "light");
   }, [dark]);
   return (
     <Button

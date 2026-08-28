@@ -55,13 +55,7 @@ export interface LearningPath {
   milestones: Milestone[];
 }
 
-export const categories = [
-  "Data Science",
-  "Web Development",
-  "AI / ML",
-  "Design",
-  "Business",
-];
+export const categories = ["Data Science", "Web Development", "AI / ML", "Design", "Business"];
 
 export const courses: Course[] = [
   {
@@ -851,7 +845,11 @@ export const getPath = (id: string) => learningPaths.find((p) => p.id === id);
 
 export const activity = [
   { id: "a1", text: "Completed module “Sampling distributions”", when: "2 hours ago" },
-  { id: "a2", text: "Path adapted: pandas course moved earlier after your feedback", when: "Yesterday" },
+  {
+    id: "a2",
+    text: "Path adapted: pandas course moved earlier after your feedback",
+    when: "Yesterday",
+  },
   { id: "a3", text: "Earned skill badge — SQL: Window Functions", when: "2 days ago" },
   { id: "a4", text: "Completed SQL for Data Analytics", when: "5 days ago" },
   { id: "a5", text: "Asked the assistant “Why is statistics before ML?”", when: "1 week ago" },
@@ -958,7 +956,7 @@ export function getReviews(courseId: string): Review[] {
   if (!course) return [];
   const seed = seedOf(courseId);
   return [0, 1, 2].map((i) => {
-    const reviewer = cycle(reviewers, seed + i * 3);
+    const reviewer = cycle<{ name: string; role: string }>(reviewers, seed + i * 3);
     return {
       id: `${courseId}-r${i}`,
       name: reviewer.name,

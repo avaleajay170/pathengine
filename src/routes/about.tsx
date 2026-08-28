@@ -179,10 +179,7 @@ function About() {
               </span>
               <h3 className="mt-4 font-semibold">{f.title}</h3>
               <p className="mt-2 flex-1 text-sm leading-relaxed text-muted-foreground">{f.body}</p>
-              <Link
-                to={f.to}
-                className="mt-4 text-sm font-medium text-primary hover:underline"
-              >
+              <Link to={f.to} className="mt-4 text-sm font-medium text-primary hover:underline">
                 {f.linkLabel} →
               </Link>
             </article>
@@ -245,7 +242,7 @@ function About() {
             <h2 className="text-3xl font-bold tracking-tight">How this was built</h2>
             <p className="mt-4 text-muted-foreground">
               Lumina is a hackathon prototype. The interface is real — React 19, TanStack Router,
-              Tailwind and a design system of {" "}
+              Tailwind and a design system of{" "}
               <span className="font-medium text-foreground">oklch</span> tokens with a violet accent
               reserved strictly for AI moments, so you can always tell what was generated.
             </p>

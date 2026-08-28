@@ -45,8 +45,8 @@ function AssistantPage() {
             </div>
           </div>
           <p className="mt-4 text-sm text-muted-foreground">
-            Lumi answers from your profile, not a generic catalogue. Everything below is in
-            context for this conversation.
+            Lumi answers from your profile, not a generic catalogue. Everything below is in context
+            for this conversation.
           </p>
         </div>
 

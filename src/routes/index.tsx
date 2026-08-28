@@ -89,8 +89,8 @@ function Landing() {
               everyone else's.
             </h1>
             <p className="mt-5 max-w-xl text-lg text-muted-foreground">
-              Lumina reads your goal, measures your skill gaps and sequences 500+ courses,
-              projects and checkpoints into one roadmap — then re-plans it as you learn.
+              Lumina reads your goal, measures your skill gaps and sequences 500+ courses, projects
+              and checkpoints into one roadmap — then re-plans it as you learn.
             </p>
 
             <form
@@ -162,14 +162,19 @@ function Landing() {
 
         <div className="mt-6 flex flex-wrap gap-2">
           {["All", ...categories].map((c) => (
-            <Badge
+            <button
               key={c}
-              variant={c === category ? "default" : "outline"}
-              className="cursor-pointer px-3 py-1.5 text-sm"
+              type="button"
+              aria-pressed={c === category}
+              className={`rounded-full border px-3 py-1.5 text-sm transition-colors ${
+                c === category
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-input bg-background hover:bg-accent hover:text-accent-foreground"
+              }`}
               onClick={() => setCategory(c)}
             >
               {c}
-            </Badge>
+            </button>
           ))}
         </div>
 
@@ -203,10 +208,7 @@ function Landing() {
           </p>
           <div className="mt-8 flex snap-x gap-6 overflow-x-auto pb-4">
             {learningPaths.map((p) => (
-              <article
-                key={p.id}
-                className="surface-card hover-lift w-80 shrink-0 snap-start p-6"
-              >
+              <article key={p.id} className="surface-card hover-lift w-80 shrink-0 snap-start p-6">
                 <span className="gradient-ai flex size-10 items-center justify-center rounded-xl">
                   <BookOpen className="size-5 text-primary-foreground" />
                 </span>

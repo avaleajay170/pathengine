@@ -85,14 +85,19 @@ function Explore() {
 
         <div className="mt-6 flex flex-wrap gap-2">
           {["All", ...categories].map((c) => (
-            <Badge
+            <button
               key={c}
-              variant={c === category ? "default" : "outline"}
-              className="cursor-pointer px-3 py-1.5 text-sm"
+              type="button"
+              aria-pressed={c === category}
+              className={`rounded-full border px-3 py-1.5 text-sm transition-colors ${
+                c === category
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-input bg-background hover:bg-accent hover:text-accent-foreground"
+              }`}
               onClick={() => setCategory(c)}
             >
               {c}
-            </Badge>
+            </button>
           ))}
         </div>
 

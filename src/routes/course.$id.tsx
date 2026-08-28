@@ -35,6 +35,7 @@ import {
   ratingBreakdown,
 } from "@/data/mock";
 import { useAssistant } from "@/lib/assistant";
+import { useLearnerProfile } from "@/lib/learner-profile";
 
 export const Route = createFileRoute("/course/$id")({
   head: ({ params }) => {
@@ -72,6 +73,7 @@ function CoursePage() {
   const { id } = Route.useParams();
   const course = getCourse(id);
   const { explain } = useAssistant();
+  const { profile } = useLearnerProfile();
 
   if (!course) {
     return (
@@ -94,7 +96,7 @@ function CoursePage() {
     .filter((c) => c.category === course.category && c.id !== course.id)
     .slice(0, 3);
   const totalLessons = course.syllabus.reduce((n, s) => n + s.items.length, 0);
-  const isCompleted = learner.completedCourses.includes(course.id);
+  const isCompleted = profile.completedCourses.includes(course.id);
 
   const reason =
     placement?.node.reason ??
@@ -140,9 +142,7 @@ function CoursePage() {
                 <span className="flex items-center gap-1.5">
                   <Stars rating={course.rating} />
                   <span className="font-semibold">{course.rating}</span>
-                  <span className="text-muted-foreground">
-                    ({course.reviews.toLocaleString()})
-                  </span>
+                  <span className="text-muted-foreground">({course.reviews.toLocaleString()})</span>
                 </span>
                 <span className="flex items-center gap-1.5 text-muted-foreground">
                   <Clock className="size-4" />
@@ -179,12 +179,14 @@ function CoursePage() {
               <div className="surface-card p-6">
                 <h2 className="text-lg font-bold">What you'll learn</h2>
                 <ul className="mt-4 grid gap-3 sm:grid-cols-2">
-                  {course.syllabus.flatMap((s) => s.items).map((item) => (
-                    <li key={item} className="flex items-start gap-2.5 text-sm">
-                      <Check className="mt-0.5 size-4 shrink-0 text-success" />
-                      {item}
-                    </li>
-                  ))}
+                  {course.syllabus
+                    .flatMap((s) => s.items)
+                    .map((item) => (
+                      <li key={item} className="flex items-start gap-2.5 text-sm">
+                        <Check className="mt-0.5 size-4 shrink-0 text-success" />
+                        {item}
+                      </li>
+                    ))}
                 </ul>
 
                 <h3 className="mt-8 text-sm font-semibold">Skills you'll gain</h3>
@@ -198,12 +200,11 @@ function CoursePage() {
 
                 <h3 className="mt-8 text-sm font-semibold">About this course</h3>
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                  {course.blurb} Across {course.syllabus.length} modules and {totalLessons} lessons,
-                  {" "}
+                  {course.blurb} Across {course.syllabus.length} modules and {totalLessons} lessons,{" "}
                   {course.instructor} works through the material at a {course.level.toLowerCase()}{" "}
                   level, with graded exercises on real datasets rather than toy examples. At{" "}
-                  {learner.hoursPerWeek} hrs/week this lands in about{" "}
-                  {Math.ceil(course.hours / learner.hoursPerWeek)} weeks.
+                  {profile.hoursPerWeek} hrs/week this lands in about{" "}
+                  {Math.ceil(course.hours / profile.hoursPerWeek)} weeks.
                 </p>
               </div>
             </TabsContent>
@@ -390,7 +391,7 @@ function CoursePage() {
                 {course.prerequisites.map((p) => {
                   const match = findPrerequisiteCourse(p);
                   const cleared =
-                    match !== undefined && learner.completedCourses.includes(match.id);
+                    match !== undefined && profile.completedCourses.includes(match.id);
                   return (
                     <li key={p} className="flex items-center gap-2 text-sm">
                       {cleared ? (
@@ -409,9 +410,7 @@ function CoursePage() {
                       ) : (
                         <span>{p}</span>
                       )}
-                      {cleared && (
-                        <span className="ml-auto text-xs text-success">Cleared</span>
-                      )}
+                      {cleared && <span className="ml-auto text-xs text-success">Cleared</span>}
                     </li>
                   );
                 })}

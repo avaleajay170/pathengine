@@ -2,8 +2,12 @@ import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { GraduationCap, Github, Twitter, Linkedin } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 
 export function Footer() {
+  const [email, setEmail] = useState("");
+
   return (
     <footer className="border-t border-border bg-secondary/40">
       <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-4">
@@ -19,9 +23,15 @@ export function Footer() {
             actually have.
           </p>
           <div className="mt-4 flex gap-2">
-            {[Twitter, Linkedin, Github].map((Icon, i) => (
-              <Button key={i} variant="outline" size="icon" aria-label="Social link">
-                <Icon className="size-4" />
+            {[
+              { Icon: Twitter, label: "Lumina on X", href: "https://x.com" },
+              { Icon: Linkedin, label: "Lumina on LinkedIn", href: "https://www.linkedin.com" },
+              { Icon: Github, label: "Lumina on GitHub", href: "https://github.com" },
+            ].map(({ Icon, label, href }) => (
+              <Button key={label} variant="outline" size="icon" asChild>
+                <a href={href} target="_blank" rel="noreferrer" aria-label={label}>
+                  <Icon className="size-4" />
+                </a>
               </Button>
             ))}
           </div>
@@ -76,9 +86,21 @@ export function Footer() {
             className="mt-4 flex gap-2"
             onSubmit={(e) => {
               e.preventDefault();
+              if (!email.trim()) return;
+              toast.success("You're on the list", {
+                description: "The weekly learning digest will be sent to your inbox.",
+              });
+              setEmail("");
             }}
           >
-            <Input type="email" placeholder="you@email.com" aria-label="Email address" />
+            <Input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@email.com"
+              aria-label="Email address"
+              required
+            />
             <Button type="submit">Join</Button>
           </form>
         </div>

@@ -19,9 +19,10 @@ import {
   TrendingUp,
   Wrench,
 } from "lucide-react";
-import { activity, getCourse, getPathOrDefault, learner } from "@/data/mock";
+import { activity, getCourse, getPathOrDefault } from "@/data/mock";
 import type { PathNodeItem } from "@/data/mock";
 import { useAssistant } from "@/lib/assistant";
+import { useLearnerProfile } from "@/lib/learner-profile";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({
@@ -58,6 +59,7 @@ function progressOf(node: PathNodeItem) {
 
 function Dashboard() {
   const { send, setOpen } = useAssistant();
+  const { profile } = useLearnerProfile();
   const path = getPathOrDefault("ml-engineer");
   const allNodes = path.milestones.flatMap((m) => m.nodes);
 
@@ -71,28 +73,26 @@ function Dashboard() {
     },
     {
       label: "Current streak",
-      value: `${learner.streak} days`,
+      value: `${profile.streak} days`,
       icon: Flame,
       detail: "Longest this year: 18 days",
     },
     {
       label: "Hours learned",
-      value: `${learner.hoursLearned}`,
+      value: `${profile.hoursLearned}`,
       icon: Clock,
-      detail: `${learner.hoursPerWeek} hrs/week average`,
+      detail: `${profile.hoursPerWeek} hrs/week average`,
     },
     {
       label: "Skills mastered",
-      value: `${learner.skillsMastered}`,
+      value: `${profile.skillsMastered}`,
       icon: Award,
-      detail: `${learner.skills.length} tracked toward your goal`,
+      detail: `${profile.skills.length} tracked toward your goal`,
     },
   ];
 
   // Next actions: what to do now, including assessments and projects.
-  const actionable = allNodes.filter(
-    (n) => n.status === "in-progress" || n.status === "available",
-  );
+  const actionable = allNodes.filter((n) => n.status === "in-progress" || n.status === "available");
   const nextActions = [...actionable];
   if (nextActions.length < 3) {
     const upcoming = allNodes.find((n) => n.status === "locked");
@@ -100,9 +100,7 @@ function Dashboard() {
   }
 
   // Continue learning: nodes that map to a real course and have been started.
-  const continueNodes = allNodes
-    .filter((n) => n.courseId && n.status !== "locked")
-    .slice(0, 3);
+  const continueNodes = allNodes.filter((n) => n.courseId && n.status !== "locked").slice(0, 3);
 
   const askLumi = (prompt: string) => {
     setOpen(true);
@@ -117,11 +115,11 @@ function Dashboard() {
           <div>
             <p className="text-sm font-medium text-muted-foreground">Welcome back</p>
             <h1 className="mt-1 text-3xl font-extrabold tracking-tight sm:text-4xl">
-              {learner.name}'s dashboard
+              {profile.name}'s dashboard
             </h1>
             <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-muted-foreground">
               <Target className="size-4 text-primary" />
-              {learner.goal}
+              {profile.goal}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
@@ -151,9 +149,7 @@ function Dashboard() {
                 </span>
               </div>
               <p className="mt-3 text-3xl font-extrabold">{s.value}</p>
-              {s.bar !== undefined ? (
-                <Progress value={s.bar} className="mt-3 h-1.5" />
-              ) : null}
+              {s.bar !== undefined ? <Progress value={s.bar} className="mt-3 h-1.5" /> : null}
               <p className="mt-2 text-xs text-muted-foreground">{s.detail}</p>
             </div>
           ))}
@@ -200,7 +196,11 @@ function Dashboard() {
                         <div className="flex flex-wrap items-center gap-2">
                           <p className="text-sm font-semibold">{node.title}</p>
                           <Badge variant="outline" className="text-xs">
-                            {locked ? "Unlocks next" : node.status === "in-progress" ? "In progress" : "Ready"}
+                            {locked
+                              ? "Unlocks next"
+                              : node.status === "in-progress"
+                                ? "In progress"
+                                : "Ready"}
                           </Badge>
                         </div>
                         <p className="mt-1 text-xs text-muted-foreground">
@@ -254,7 +254,10 @@ function Dashboard() {
                   if (!course) return null;
                   const pct = progressOf(node);
                   return (
-                    <article key={node.id} className="surface-card hover-lift flex flex-col overflow-hidden">
+                    <article
+                      key={node.id}
+                      className="surface-card hover-lift flex flex-col overflow-hidden"
+                    >
                       <div
                         className="h-20 w-full"
                         style={{
@@ -291,7 +294,7 @@ function Dashboard() {
             <div className="surface-card p-5">
               <h3 className="font-semibold">Skills vs. target role</h3>
               <p className="mt-1 text-xs text-muted-foreground">
-                Current profile against the {learner.targetRole} benchmark.
+                Current profile against the {profile.targetRole} benchmark.
               </p>
               <div className="mt-3">
                 <SkillRadar height={250} />

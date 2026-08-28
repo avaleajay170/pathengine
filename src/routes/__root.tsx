@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AssistantProvider } from "@/lib/assistant";
+import { LearnerProfileProvider } from "@/lib/learner-profile";
 import { Navbar } from "@/components/Navbar";
 import { ChatWidget } from "@/components/ChatWidget";
 import { Toaster } from "@/components/ui/sonner";
@@ -39,9 +40,9 @@ function NotFoundComponent() {
 }
 
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
-  console.error(error);
   const router = useRouter();
   useEffect(() => {
+    console.error(error);
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
   }, [error]);
 
@@ -95,7 +96,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
       {
@@ -108,7 +108,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap",
       },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
     ],
   }),
   shellComponent: RootShell,
@@ -136,18 +136,19 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AssistantProvider>
-        <div className="flex min-h-screen flex-col">
-          <Navbar />
-          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-          <div className="flex-1">
-            <Outlet />
+      <LearnerProfileProvider>
+        <AssistantProvider>
+          <div className="flex min-h-screen flex-col">
+            <Navbar />
+            {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+            <div className="flex-1">
+              <Outlet />
+            </div>
           </div>
-        </div>
-        <ChatWidget />
-        <Toaster position="top-right" richColors />
-      </AssistantProvider>
+          <ChatWidget />
+          <Toaster position="top-right" richColors />
+        </AssistantProvider>
+      </LearnerProfileProvider>
     </QueryClientProvider>
   );
 }
-

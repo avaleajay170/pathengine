@@ -138,7 +138,7 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
         id: nextId(),
         role: "assistant",
         content: `${reason}\n\nIt maps directly to your goal of becoming a ${learner.targetRole} within ${learner.timeframe}, and it builds on what you already finished (Python for Everybody, SQL for Data Analytics).`,
-        courseId,
+        ...(courseId !== undefined && { courseId }),
       });
     },
     [respond],

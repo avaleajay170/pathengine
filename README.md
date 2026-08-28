@@ -114,18 +114,6 @@ Keep component structure modular (Navbar, CourseCard, PathNode, ChatWidget, Skil
 
 Build this as a multi-page app with working navigation between all routes described above. Start with the Landing Page and Learning Path page as the highest-fidelity screens since they'll make the strongest first impression, then fill in the rest.
 
-This project was built with [Lovable](https://lovable.dev).
-
-**Live app**: https://pathcraft-ai.lovable.app
-
-## Build with Lovable
-
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/3d377097-1779-48cf-8b26-02b1f911ee2a).
-
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
-
 ## Development
 
 Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).

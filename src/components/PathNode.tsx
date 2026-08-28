@@ -2,12 +2,7 @@ import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-  TooltipProvider,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import {
   CheckCircle2,
@@ -26,7 +21,11 @@ import { useAssistant } from "@/lib/assistant";
 
 const statusMeta = {
   completed: { label: "Completed", icon: CheckCircle2, cls: "bg-success text-success-foreground" },
-  "in-progress": { label: "In progress", icon: PlayCircle, cls: "bg-primary text-primary-foreground" },
+  "in-progress": {
+    label: "In progress",
+    icon: PlayCircle,
+    cls: "bg-primary text-primary-foreground",
+  },
   available: { label: "Available", icon: CircleDot, cls: "bg-accent text-accent-foreground" },
   locked: { label: "Locked", icon: Lock, cls: "bg-muted text-muted-foreground" },
 } as const;
@@ -44,7 +43,7 @@ export function PathNode({ node }: { node: PathNodeItem }) {
   const KindIcon = kindIcon[node.kind];
   const StatusIcon = meta.icon;
 
-  const adapt = (signal: string) => {
+  const adapt = (signal: "good fit" | "too easy") => {
     toast("Adapting your path…", {
       description: `Lumi is re-sequencing "${node.title}" after your “${signal}” feedback.`,
     });
@@ -54,7 +53,7 @@ export function PathNode({ node }: { node: PathNodeItem }) {
           description:
             signal === "too easy"
               ? "Replaced with an advanced checkpoint — 12 hours saved this month."
-              : "Added a shorter primer before this node and pushed your ETA by 4 days.",
+              : "Marked as a good fit — Lumi will keep this level in your path.",
         }),
       1400,
     );
@@ -82,7 +81,10 @@ export function PathNode({ node }: { node: PathNodeItem }) {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Badge variant="outline" className="gap-1 border-warning/50 text-warning-foreground">
+                  <Badge
+                    variant="outline"
+                    className="gap-1 border-warning/50 text-warning-foreground"
+                  >
                     <Lock className="size-3" />
                     Prerequisites
                   </Badge>
@@ -116,7 +118,9 @@ export function PathNode({ node }: { node: PathNodeItem }) {
             size="sm"
             variant="outline"
             className="text-ai"
-            onClick={() => explain({ title: node.title, reason: node.reason, courseId: node.courseId })}
+            onClick={() =>
+              explain({ title: node.title, reason: node.reason, courseId: node.courseId })
+            }
           >
             <Sparkle className="size-4" />
             Why this?
@@ -127,10 +131,20 @@ export function PathNode({ node }: { node: PathNodeItem }) {
           </Button>
 
           <div className="ml-auto flex items-center gap-1">
-            <Button size="icon" variant="ghost" aria-label="Good fit" onClick={() => adapt("good fit")}>
+            <Button
+              size="icon"
+              variant="ghost"
+              aria-label="Good fit"
+              onClick={() => adapt("good fit")}
+            >
               <ThumbsUp className="size-4" />
             </Button>
-            <Button size="icon" variant="ghost" aria-label="Too easy" onClick={() => adapt("too easy")}>
+            <Button
+              size="icon"
+              variant="ghost"
+              aria-label="Too easy"
+              onClick={() => adapt("too easy")}
+            >
               <ThumbsDown className="size-4" />
             </Button>
           </div>

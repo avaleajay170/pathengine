@@ -114,14 +114,14 @@ export function ChatThread({ className = "" }: { className?: string }) {
       <div className="border-t border-border p-3">
         <div className="mb-2 flex flex-wrap gap-2">
           {suggestedPrompts.map((p) => (
-            <Badge
+            <button
               key={p}
-              variant="outline"
-              className="cursor-pointer border-ai/40 text-ai hover:bg-ai-soft"
+              type="button"
+              className="rounded-full border border-ai/40 px-2.5 py-1 text-xs text-ai hover:bg-ai-soft"
               onClick={() => send(p)}
             >
               {p}
-            </Badge>
+            </button>
           ))}
         </div>
         <div className="flex items-end gap-2">

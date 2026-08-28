@@ -19,8 +19,9 @@ import {
   Target,
   XCircle,
 } from "lucide-react";
-import { getPath, learner } from "@/data/mock";
+import { getPath } from "@/data/mock";
 import { useAssistant } from "@/lib/assistant";
+import { useLearnerProfile } from "@/lib/learner-profile";
 
 export const Route = createFileRoute("/path/$id")({
   head: ({ params }) => {
@@ -44,6 +45,7 @@ function PathPage() {
   const { id } = Route.useParams();
   const path = getPath(id);
   const { send, setOpen } = useAssistant();
+  const { profile } = useLearnerProfile();
 
   if (!path) {
     return (
@@ -67,7 +69,7 @@ function PathPage() {
     .reduce((sum, n) => sum + (parseInt(n.duration, 10) || 0), 0);
 
   // The skill furthest below its benchmark — reduce keeps this non-optional.
-  const widestGap = learner.skills.reduce((worst, skill) =>
+  const widestGap = profile.skills.reduce((worst, skill) =>
     skill.target - skill.current > worst.target - worst.current ? skill : worst,
   );
 
@@ -100,7 +102,7 @@ function PathPage() {
             <div className="max-w-2xl">
               <Badge className="gap-1 bg-ai-soft text-ai">
                 <Sparkle className="size-3" />
-                Personalized for {learner.name}
+                Personalized for {profile.name}
               </Badge>
               <h1 className="mt-4 text-3xl font-extrabold tracking-tight sm:text-4xl">
                 {path.title}
@@ -112,7 +114,7 @@ function PathPage() {
                 <Badge variant="secondary">{path.weeks} weeks</Badge>
                 <Badge variant="secondary" className="gap-1">
                   <Gauge className="size-3" />
-                  {learner.hoursPerWeek} hrs/week
+                  {profile.hoursPerWeek} hrs/week
                 </Badge>
               </div>
             </div>
@@ -164,7 +166,8 @@ function PathPage() {
             <h2 className="text-2xl font-bold tracking-tight">Your roadmap</h2>
             {activeNode && (
               <p className="text-sm text-muted-foreground">
-                Active now: <span className="font-semibold text-foreground">{activeNode.title}</span>
+                Active now:{" "}
+                <span className="font-semibold text-foreground">{activeNode.title}</span>
               </p>
             )}
           </div>
@@ -223,7 +226,7 @@ function PathPage() {
               <h3 className="font-semibold">Skill gap</h3>
             </div>
             <p className="mt-1 text-xs text-muted-foreground">
-              Where you are now against the {learner.targetRole} benchmark.
+              Where you are now against the {profile.targetRole} benchmark.
             </p>
             <div className="mt-4">
               <SkillGapBars height={230} />
@@ -239,8 +242,9 @@ function PathPage() {
               </span>
             </div>
             <p className="mt-4 rounded-xl border border-ai/25 bg-ai-soft p-3 text-xs text-ai-foreground/90">
-              Widest gap: <span className="font-semibold">{widestGap.skill}</span> — {widestGap.current}
-              % vs {widestGap.target}% target. Your next two stages spend most of their hours here.
+              Widest gap: <span className="font-semibold">{widestGap.skill}</span> —{" "}
+              {widestGap.current}% vs {widestGap.target}% target. Your next two stages spend most of
+              their hours here.
             </p>
           </div>
 

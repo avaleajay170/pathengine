@@ -8,17 +8,9 @@ import { Progress } from "@/components/ui/progress";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  ArrowLeft,
-  ArrowRight,
-  Bot,
-  Check,
-  FileUp,
-  Search,
-  Sparkles,
-  Wand2,
-} from "lucide-react";
+import { ArrowLeft, ArrowRight, Bot, Check, FileUp, Search, Sparkles, Wand2 } from "lucide-react";
 import { courses, defaultPath, getPathOrDefault, learner } from "@/data/mock";
+import { useLearnerProfile } from "@/lib/learner-profile";
 
 export const Route = createFileRoute("/onboarding")({
   head: () => ({
@@ -100,6 +92,7 @@ function matchPath(role: string, goalText: string) {
 
 function Onboarding() {
   const navigate = useNavigate();
+  const { updateProfile } = useLearnerProfile();
   const [step, setStep] = useState(1);
 
   // Step 1
@@ -186,10 +179,7 @@ function Onboarding() {
             ))}
           </ol>
 
-          <Progress
-            value={((genStage + 1) / GENERATION_STEPS.length) * 100}
-            className="mt-8"
-          />
+          <Progress value={((genStage + 1) / GENERATION_STEPS.length) * 100} className="mt-8" />
         </div>
       </main>
     );
@@ -285,10 +275,7 @@ function Onboarding() {
                 ))}
               </div>
 
-              <label
-                htmlFor="goal"
-                className="mt-8 block text-sm font-semibold text-foreground"
-              >
+              <label htmlFor="goal" className="mt-8 block text-sm font-semibold text-foreground">
                 Describe your goal
               </label>
               <Textarea
@@ -329,9 +316,7 @@ function Onboarding() {
                       max={2}
                       step={1}
                       value={[skillLevels[s] ?? 0]}
-                      onValueChange={([v]) =>
-                        setSkillLevels((prev) => ({ ...prev, [s]: v ?? 0 }))
-                      }
+                      onValueChange={([v]) => setSkillLevels((prev) => ({ ...prev, [s]: v ?? 0 }))}
                     />
                     <div className="mt-2 flex justify-between text-xs text-muted-foreground">
                       {LEVELS.map((l) => (
@@ -385,9 +370,7 @@ function Onboarding() {
                   />
                 </div>
 
-                <p className="mt-3 text-xs text-muted-foreground">
-                  {priorCourses.length} selected
-                </p>
+                <p className="mt-3 text-xs text-muted-foreground">{priorCourses.length} selected</p>
 
                 <ul className="mt-2 max-h-72 space-y-1 overflow-y-auto rounded-xl border border-border p-2">
                   {filteredCourses.map((c) => (
@@ -396,9 +379,7 @@ function Onboarding() {
                         <Checkbox
                           className="mt-0.5"
                           checked={priorCourses.includes(c.id)}
-                          onCheckedChange={() =>
-                            setPriorCourses((prev) => toggle(prev, c.id))
-                          }
+                          onCheckedChange={() => setPriorCourses((prev) => toggle(prev, c.id))}
                         />
                         <span className="min-w-0">
                           <span className="block text-sm font-medium">{c.title}</span>
@@ -477,7 +458,9 @@ function Onboarding() {
                       key={p.id}
                       htmlFor={`pace-${p.id}`}
                       className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition-colors ${
-                        pace === p.id ? "border-primary bg-primary-soft" : "border-input hover:bg-muted"
+                        pace === p.id
+                          ? "border-primary bg-primary-soft"
+                          : "border-input hover:bg-muted"
                       }`}
                     >
                       <RadioGroupItem id={`pace-${p.id}`} value={p.id} className="mt-0.5" />
@@ -531,7 +514,9 @@ function Onboarding() {
                 </div>
                 <div className="flex gap-4 py-3">
                   <dt className="w-40 shrink-0 text-sm text-muted-foreground">Weekly hours</dt>
-                  <dd className="text-sm font-medium">{hours} hrs · {pace} pace</dd>
+                  <dd className="text-sm font-medium">
+                    {hours} hrs · {pace} pace
+                  </dd>
                 </div>
                 <div className="flex gap-4 py-3">
                   <dt className="w-40 shrink-0 text-sm text-muted-foreground">Formats</dt>
@@ -577,6 +562,12 @@ function Onboarding() {
                 size="lg"
                 className="gradient-ai"
                 onClick={() => {
+                  updateProfile({
+                    goal: goalText.trim() || `Become a ${role} and build a portfolio project.`,
+                    targetRole: role || targetPath.title,
+                    hoursPerWeek: hours,
+                    completedCourses: priorCourses,
+                  });
                   setGenStage(0);
                   setGenerating(true);
                 }}
