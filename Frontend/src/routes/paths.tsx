@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Footer } from "@/components/Footer";
 import { BookOpen, Clock, Layers } from "lucide-react";
-import { learningPaths } from "@/data/mock";
+import { usePaths } from "@/lib/repositories/paths";
 
 export const Route = createFileRoute("/paths")({
   head: () => ({
@@ -25,6 +25,20 @@ export const Route = createFileRoute("/paths")({
 });
 
 function Paths() {
+  const { data, isLoading, isError, refetch } = usePaths();
+
+  if (isLoading) {
+    return <main className="mx-auto max-w-7xl px-4 py-24 text-center">Loading learning paths...</main>;
+  }
+  if (isError || !data) {
+    return (
+      <main className="mx-auto max-w-3xl px-4 py-24 text-center">
+        <h1 className="text-2xl font-bold">Learning paths are unavailable</h1>
+        <Button className="mt-6" onClick={() => void refetch()}>Try again</Button>
+      </main>
+    );
+  }
+
   return (
     <main>
       <div className="gradient-hero border-b border-border">
@@ -38,7 +52,7 @@ function Paths() {
       </div>
 
       <div className="mx-auto grid max-w-7xl gap-6 px-4 py-12 sm:px-6 md:grid-cols-2 lg:grid-cols-3">
-        {learningPaths.map((p) => (
+        {data.paths.map((p) => (
           <article key={p.id} className="surface-card hover-lift flex flex-col p-6">
             <span className="gradient-ai flex size-10 items-center justify-center rounded-xl">
               <BookOpen className="size-5 text-primary-foreground" />
@@ -47,9 +61,9 @@ function Paths() {
             <p className="mt-2 text-sm text-muted-foreground">{p.goal}</p>
             <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
               {p.milestones.map((m) => (
-                <li key={m.id} className="flex items-center gap-2">
+                <li key={m.title} className="flex items-center gap-2">
                   <Layers className="size-4 text-primary" />
-                  {m.title} · {m.nodes.length} steps
+                  {m.title} · {m.nodeCount} steps
                 </li>
               ))}
             </ul>

@@ -611,12 +611,7 @@ function Onboarding() {
                     selectedRole,
                     hoursPerWeek: hours,
                     completedCourses: priorCourses,
-                    skillLevels: Object.fromEntries(
-                      Object.entries(skillLevels).map(([skill, value]) => [
-                        skill,
-                        LEVELS[value] ?? LEVELS[0],
-                      ]),
-                    ),
+                    skillLevels,
                     priorExperience: uploadName,
                     preferredFormats: formats,
                     pace: pace === "intensive" ? "fast" : pace === "relaxed" ? "slow" : "moderate",

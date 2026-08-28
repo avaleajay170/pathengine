@@ -5,6 +5,17 @@ import type { PathNodeItem } from "@/data/mock";
 import { completedHours } from "@/routes/dashboard";
 
 describe("generateLearningPath", () => {
+  it("treats onboarding slider values as numeric skill scores", () => {
+    const path = generateLearningPath({
+      ...emptyLearnerProfile,
+      selectedRole: "ml-engineer",
+      skillLevels: { Python: 2, Statistics: 1 },
+    });
+
+    expect(path.milestones.flatMap((milestone) => milestone.nodes).length).toBeGreaterThan(0);
+    expect(path.progress).toBeGreaterThanOrEqual(0);
+  });
+
   it("generates a role-specific roadmap", () => {
     const profile = {
       ...emptyLearnerProfile,
