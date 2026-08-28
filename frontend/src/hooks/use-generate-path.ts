@@ -4,27 +4,29 @@ import type { LearnerProfile, LearningPath } from "@/data/mock";
 import { generateLearningPath } from "@/lib/learning-path";
 
 interface GeneratePathRequest {
+  /** Server-assigned profile ID — sent to the API when online. */
+  profileId: string;
+  /** Full profile used for the offline client-side fallback. */
   profile: LearnerProfile;
 }
 
 async function generatePath(request: GeneratePathRequest): Promise<LearningPath> {
   if (!isApiEnabled) {
-    // Fall back to client-side generation
     return generateLearningPath(request.profile);
   }
 
   const result = await api.post<LearningPath>("/api/v1/paths/generate", {
-    profile: request.profile,
+    profileId: request.profileId,
   });
 
   if (!result.ok) {
-    // Fall back to client-side generation on error
+    // Network unreachable — fall back to client-side generation
     if (result.error.status === 0) {
       return generateLearningPath(request.profile);
     }
     throw result.error;
   }
-  
+
   return result.data;
 }
 
@@ -34,9 +36,7 @@ export function useGeneratePath() {
   return useMutation({
     mutationFn: generatePath,
     onSuccess: (data) => {
-      // Cache the generated path
       queryClient.setQueryData(["path", data.id], data);
-      // Invalidate paths list to include new path
       queryClient.invalidateQueries({ queryKey: ["paths"] });
     },
   });

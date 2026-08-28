@@ -1,13 +1,14 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, isApiEnabled } from "@/lib/api-client";
 
-async function enrollCourse(courseId: string): Promise<{ enrolled: boolean }> {
+async function enrollCourse(courseId: string): Promise<{ enrolled: true; courseId: string }> {
   if (!isApiEnabled) {
-    // Mock response when API is disabled
-    return { enrolled: true };
+    return { enrolled: true, courseId };
   }
 
-  const result = await api.post<{ enrolled: boolean }>("/api/v1/profile/enroll", { courseId });
+  const result = await api.post<{ enrolled: true; courseId: string }>(
+    `/api/v1/courses/${encodeURIComponent(courseId)}/enroll`,
+  );
 
   if (!result.ok) throw result.error;
   return result.data;
@@ -19,7 +20,6 @@ export function useEnroll() {
   return useMutation({
     mutationFn: enrollCourse,
     onSuccess: () => {
-      // Invalidate profile to refresh enrollment state
       queryClient.invalidateQueries({ queryKey: ["profile"] });
     },
   });
