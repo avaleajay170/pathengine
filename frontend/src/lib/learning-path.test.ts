@@ -1,8 +1,21 @@
 import { describe, expect, it } from "vitest";
 import { emptyLearnerProfile } from "@/lib/learner-profile";
 import { generateLearningPath } from "@/lib/learning-path";
+import type { PathNodeItem } from "@/data/mock";
+import { completedHours } from "@/routes/dashboard";
 
 describe("generateLearningPath", () => {
+  it("treats onboarding slider values as numeric skill scores", () => {
+    const path = generateLearningPath({
+      ...emptyLearnerProfile,
+      selectedRole: "ml-engineer",
+      skillLevels: { Python: 2, Statistics: 1 },
+    });
+
+    expect(path.milestones.flatMap((milestone) => milestone.nodes).length).toBeGreaterThan(0);
+    expect(path.progress).toBeGreaterThanOrEqual(0);
+  });
+
   it("generates a role-specific roadmap", () => {
     const profile = {
       ...emptyLearnerProfile,
@@ -47,5 +60,31 @@ describe("generateLearningPath", () => {
     };
     const path = generateLearningPath(profile);
     expect(path.progress).toBeGreaterThan(0);
+  });
+
+  it("calculates learned hours from completed node durations", () => {
+    const nodes = [
+      {
+        id: "a",
+        kind: "course",
+        title: "A",
+        duration: "12 hrs",
+        status: "completed",
+        skills: [],
+        description: "",
+        reason: "",
+      },
+      {
+        id: "b",
+        kind: "project",
+        title: "B",
+        duration: "6 hrs",
+        status: "available",
+        skills: [],
+        description: "",
+        reason: "",
+      },
+    ] as PathNodeItem[];
+    expect(completedHours(nodes)).toBe(12);
   });
 });

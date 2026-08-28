@@ -20,9 +20,9 @@ import {
   XCircle,
 } from "lucide-react";
 import { getPath } from "@/data/mock";
-import { generateLearningPath } from "@/lib/learning-path";
 import { useAssistant } from "@/lib/assistant";
 import { useLearnerProfile } from "@/lib/learner-profile";
+import { usePath } from "@/lib/repositories/paths";
 
 export const Route = createFileRoute("/path/$id")({
   head: ({ params }) => {
@@ -46,7 +46,20 @@ function PathPage() {
   const { id } = Route.useParams();
   const { send, setOpen } = useAssistant();
   const { profile, updateProfile, submitNodeFeedback } = useLearnerProfile();
-  const path = getPath(id) ? generateLearningPath(profile) : undefined;
+  const { data: path, isLoading, isError, refetch } = usePath(id, profile);
+
+  if (isLoading) {
+    return <main className="mx-auto max-w-3xl px-4 py-24 text-center">Loading your roadmap...</main>;
+  }
+
+  if (isError) {
+    return (
+      <main className="mx-auto max-w-3xl px-4 py-24 text-center">
+        <h1 className="text-2xl font-bold">Your roadmap could not be loaded</h1>
+        <Button className="mt-6" onClick={() => void refetch()}>Try again</Button>
+      </main>
+    );
+  }
 
   if (!path) {
     return (
@@ -93,10 +106,7 @@ function PathPage() {
     if (activeNode) submitNodeFeedback(activeNode.id, feedback);
     if (signal === "too easy") updateProfile({ pace: "fast" });
     if (signal === "too hard") updateProfile({ pace: "slow" });
-    toast("Adapting your path…", {
-      description: `Lumi is re-scoring every remaining node against “${signal}”.`,
-    });
-    window.setTimeout(() => toast.success("Path updated", { description: outcome }), 1400);
+    toast.success("Feedback saved", { description: outcome });
   };
 
   return (

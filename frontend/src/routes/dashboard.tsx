@@ -55,6 +55,12 @@ function progressOf(node: PathNodeItem, completedCourses: string[]) {
   return node.courseId && completedCourses.includes(node.courseId) ? 100 : 0;
 }
 
+export function completedHours(nodes: PathNodeItem[]): number {
+  return nodes
+    .filter((node) => node.status === "completed")
+    .reduce((total, node) => total + (Number.parseInt(node.duration, 10) || 0), 0);
+}
+
 function Dashboard() {
   const { send, setOpen } = useAssistant();
   const { profile } = useLearnerProfile();
@@ -77,7 +83,7 @@ function Dashboard() {
     },
     {
       label: "Hours learned",
-      value: `${profile.completedCourses.length}`,
+      value: `${completedHours(allNodes)}`,
       icon: Clock,
       detail: `${profile.hoursPerWeek} hrs/week planned`,
     },

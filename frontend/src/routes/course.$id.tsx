@@ -27,15 +27,17 @@ import {
 } from "lucide-react";
 import {
   courses,
-  findCourseInPaths,
   findPrerequisiteCourse,
   getCourse,
-  getReviews,
-  learner,
-  ratingBreakdown,
 } from "@/data/mock";
 import { useAssistant } from "@/lib/assistant";
 import { useLearnerProfile } from "@/lib/learner-profile";
+import {
+  findCoursePathContext,
+  useCourse,
+  useCourseReviews,
+  useCourses,
+} from "@/lib/repositories/courses";
 
 export const Route = createFileRoute("/course/$id")({
   head: ({ params }) => {
@@ -71,9 +73,24 @@ function Stars({ rating, className = "" }: { rating: number; className?: string 
 
 function CoursePage() {
   const { id } = Route.useParams();
-  const course = getCourse(id);
+  const { data: course, isLoading, isError, refetch: refetchCourse } = useCourse(id);
+  const { data: allCourses } = useCourses({ limit: 100 });
+  const { data: reviewData, isLoading: reviewsLoading } = useCourseReviews(id);
   const { explain } = useAssistant();
   const { profile, enrollCourse, addToPath } = useLearnerProfile();
+
+  if (isLoading) {
+    return <main className="mx-auto max-w-3xl px-4 py-24 text-center">Loading course...</main>;
+  }
+
+  if (isError) {
+    return (
+      <main className="mx-auto max-w-3xl px-4 py-24 text-center">
+        <h1 className="text-2xl font-bold">This course could not be loaded</h1>
+        <Button className="mt-6" onClick={() => void refetchCourse()}>Try again</Button>
+      </main>
+    );
+  }
 
   if (!course) {
     return (
@@ -89,10 +106,10 @@ function CoursePage() {
     );
   }
 
-  const placement = findCourseInPaths(course.id);
-  const reviews = getReviews(course.id);
-  const breakdown = ratingBreakdown(course);
-  const related = courses
+  const placement = findCoursePathContext(course.id);
+  const reviews = reviewData?.reviews ?? [];
+  const breakdown = reviewData?.breakdown ?? [];
+  const related = (allCourses?.courses ?? courses)
     .filter((c) => c.category === course.category && c.id !== course.id)
     .slice(0, 3);
   const totalLessons = course.syllabus.reduce((n, s) => n + s.items.length, 0);

@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -12,7 +13,8 @@ import {
 import { CourseCard } from "@/components/CourseCard";
 import { Footer } from "@/components/Footer";
 import { Search } from "lucide-react";
-import { categories, courses } from "@/data/mock";
+import { categories } from "@/data/mock";
+import { useCourses } from "@/lib/repositories/courses";
 
 export const Route = createFileRoute("/explore")({
   head: () => ({
@@ -37,13 +39,13 @@ function Explore() {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("All");
   const [level, setLevel] = useState("All levels");
+  const { data, isLoading, isError, refetch } = useCourses({
+    q: query,
+    ...(category !== "All" && { category }),
+    ...(level !== "All levels" && { level }),
+  });
 
-  const visible = courses.filter(
-    (c) =>
-      (category === "All" || c.category === category) &&
-      (level === "All levels" || c.level === level) &&
-      (c.title + c.provider + c.skills.join(" ")).toLowerCase().includes(query.toLowerCase()),
-  );
+  const visible = data?.courses ?? [];
 
   return (
     <main>
@@ -101,13 +103,23 @@ function Explore() {
           ))}
         </div>
 
-        <p className="mt-6 text-sm text-muted-foreground">{visible.length} courses</p>
+        {isLoading && <p className="mt-6 text-sm text-muted-foreground">Loading courses...</p>}
+        {isError && (
+          <div className="mt-6 flex items-center gap-3 text-sm text-destructive">
+            <span>Courses could not be loaded.</span>
+            <Button variant="outline" size="sm" onClick={() => void refetch()}>Try again</Button>
+          </div>
+        )}
+        {!isLoading && !isError && <p className="mt-6 text-sm text-muted-foreground">{visible.length} courses</p>}
 
         <div className="mt-4 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {visible.map((c) => (
             <CourseCard key={c.id} course={c} />
           ))}
         </div>
+        {!isLoading && !isError && visible.length === 0 && (
+          <p className="mt-10 text-center text-muted-foreground">No courses match those filters.</p>
+        )}
       </div>
       <Footer />
     </main>

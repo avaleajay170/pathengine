@@ -87,12 +87,17 @@ export function ChatThread({ className = "" }: { className?: string }) {
 
   return (
     <div className={`flex min-h-0 flex-1 flex-col ${className}`}>
-      <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-4">
+      <div
+        className="min-h-0 flex-1 space-y-5 overflow-y-auto p-4"
+        aria-live="polite"
+        aria-busy={thinking}
+        aria-label="Assistant conversation"
+      >
         {messages.map((m) => (
           <Bubble key={m.id} message={m} />
         ))}
         {thinking && (
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3" role="status">
             <span className="gradient-ai flex size-7 items-center justify-center rounded-lg">
               <Bot className="size-4 text-primary-foreground" />
             </span>
@@ -105,7 +110,9 @@ export function ChatThread({ className = "" }: { className?: string }) {
                 />
               ))}
             </span>
-            <span className="text-xs text-muted-foreground">Lumi is reasoning over your path…</span>
+            <span className="text-xs text-muted-foreground">
+              Lumi is reasoning over your path...
+            </span>
           </div>
         )}
         <div ref={endRef} />
