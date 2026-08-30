@@ -135,8 +135,8 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
                 id: data.id,
                 role: data.role,
                 content: data.content,
-                courseId: data.courseId,
-                milestone: data.milestone,
+                ...(data.courseId !== undefined ? { courseId: data.courseId } : {}),
+                ...(data.milestone !== undefined ? { milestone: data.milestone } : {}),
               },
             ]);
           },

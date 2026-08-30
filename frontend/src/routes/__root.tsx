@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AssistantProvider } from "@/lib/assistant";
+import { AuthProvider } from "@/lib/auth";
 import { LearnerProfileProvider } from "@/lib/learner-profile";
 import { Navbar } from "@/components/Navbar";
 import { ChatWidget } from "@/components/ChatWidget";
@@ -137,22 +138,24 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <LearnerProfileProvider>
-        <AssistantProvider>
-          <div className="flex min-h-screen flex-col">
-            <Navbar />
-            <a
-              href="#main-content"
-              className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-background focus:px-4 focus:py-2 focus:text-foreground focus:shadow-lg"
-            >
-              Skip to main content
-            </a>
-            <main id="main-content" className="flex-1">
-              <Outlet />
-            </main>
-          </div>
-          <ChatWidget />
-          <Toaster position="top-right" richColors />
-        </AssistantProvider>
+        <AuthProvider>
+          <AssistantProvider>
+            <div className="flex min-h-screen flex-col">
+              <Navbar />
+              <a
+                href="#main-content"
+                className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-background focus:px-4 focus:py-2 focus:text-foreground focus:shadow-lg"
+              >
+                Skip to main content
+              </a>
+              <main id="main-content" className="flex-1">
+                <Outlet />
+              </main>
+            </div>
+            <ChatWidget />
+            <Toaster position="top-right" richColors />
+          </AssistantProvider>
+        </AuthProvider>
       </LearnerProfileProvider>
     </QueryClientProvider>
   );

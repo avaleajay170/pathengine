@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import learner, recommend, roadmap, feedback
+from app.routers import auth, learner, recommend, roadmap, feedback
 
 app = FastAPI(title="Trajectory API", version="0.1.0")
 
@@ -17,6 +17,7 @@ app.include_router(learner.router)
 app.include_router(recommend.router)
 app.include_router(roadmap.router)
 app.include_router(feedback.router)
+app.include_router(auth.router)
 
 
 @app.get("/health")

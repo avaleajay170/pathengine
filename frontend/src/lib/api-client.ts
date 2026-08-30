@@ -22,6 +22,31 @@ function errorFromResponse(status: number, payload: unknown): ApiError {
       };
     }
   }
+  if (payload && typeof payload === "object" && "detail" in payload) {
+    const detail = (payload as { detail?: unknown }).detail;
+    if (detail && typeof detail === "object") {
+      if ("message" in detail && typeof (detail as { message?: unknown }).message === "string") {
+        return { status, message: (detail as { message: string }).message };
+      }
+      if (
+        "error" in detail &&
+        (detail as { error?: unknown }).error &&
+        typeof (detail as { error?: unknown }).error === "object"
+      ) {
+        const nested = (detail as { error: { message?: unknown; code?: unknown; details?: unknown } }).error;
+        const details =
+          nested.details && typeof nested.details === "object"
+            ? (nested.details as Record<string, string[]>)
+            : undefined;
+        return {
+          status,
+          message: typeof nested.message === "string" ? nested.message : "Request failed",
+          ...(typeof nested.code === "string" && { code: nested.code }),
+          ...(details ? { details } : {}),
+        };
+      }
+    }
+  }
   return { status, message: status === 429 ? "Please wait and try again." : "Request failed" };
 }
 

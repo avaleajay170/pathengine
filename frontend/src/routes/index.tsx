@@ -19,18 +19,19 @@ import {
 } from "lucide-react";
 import heroImg from "@/assets/hero.jpg";
 import { categories, courses, learningPaths, stats, testimonials } from "@/data/mock";
+import { useAuth } from "@/lib/auth";
 import { useLearnerProfile } from "@/lib/learner-profile";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Lumina — AI-Personalized Learning Paths for Your Career Goal" },
+      { title: "Lumina - AI-Personalized Learning Paths for Your Career Goal" },
       {
         name: "description",
         content:
           "Tell Lumina your goal and get an adaptive roadmap of courses, projects and checkpoints built around your skill gaps and weekly hours.",
       },
-      { property: "og:title", content: "Lumina — AI-Personalized Learning Paths" },
+      { property: "og:title", content: "Lumina - AI-Personalized Learning Paths" },
       {
         property: "og:description",
         content: "An adaptive learning roadmap generated from your goal and measured skill gaps.",
@@ -44,7 +45,7 @@ const steps = [
   {
     icon: Target,
     title: "Tell us your goal",
-    body: "Describe it in plain language — “I want to be an ML engineer in 6 months”.",
+    body: 'Describe it in plain language - "I want to be an ML engineer in 6 months."',
   },
   {
     icon: BarChart3,
@@ -61,24 +62,26 @@ const steps = [
     title: "Track and adapt",
     body: "Flag anything too easy or too hard and the path re-plans in seconds.",
   },
-];
+] as const;
 
 function Landing() {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
   const { updateProfile } = useLearnerProfile();
   const [goal, setGoal] = useState("");
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("All");
 
   const visible = courses.filter(
-    (c) =>
-      (category === "All" || c.category === category) &&
-      (c.title + c.provider + c.skills.join(" ")).toLowerCase().includes(query.toLowerCase()),
+    (course) =>
+      (category === "All" || course.category === category) &&
+      (course.title + course.provider + course.skills.join(" "))
+        .toLowerCase()
+        .includes(query.toLowerCase()),
   );
 
   return (
     <main>
-      {/* Hero */}
       <section className="gradient-hero border-b border-border">
         <div className="mx-auto grid max-w-7xl items-center gap-12 px-4 py-16 sm:px-6 lg:grid-cols-2 lg:py-24">
           <div>
@@ -88,24 +91,24 @@ function Landing() {
             </Badge>
             <h1 className="mt-5 text-4xl leading-tight font-extrabold tracking-tight sm:text-5xl lg:text-6xl">
               The learning path that <span className="text-primary">fits your goal</span>, not
-              everyone else's.
+              everyone else&apos;s.
             </h1>
             <p className="mt-5 max-w-xl text-lg text-muted-foreground">
               Lumina reads your goal, measures your skill gaps and sequences 500+ courses, projects
-              and checkpoints into one roadmap — then re-plans it as you learn.
+              and checkpoints into one roadmap, then re-plans it as you learn.
             </p>
 
             <form
               className="mt-8 flex flex-col gap-3 sm:flex-row"
-              onSubmit={(e) => {
-                e.preventDefault();
+              onSubmit={(event) => {
+                event.preventDefault();
                 if (goal.trim()) updateProfile({ goal: goal.trim() });
                 navigate({ to: "/onboarding" });
               }}
             >
               <Input
                 value={goal}
-                onChange={(e) => setGoal(e.target.value)}
+                onChange={(event) => setGoal(event.target.value)}
                 placeholder="What do you want to learn today?"
                 aria-label="Your learning goal"
                 className="h-13 bg-card text-base"
@@ -116,7 +119,9 @@ function Landing() {
               </Button>
             </form>
             <p className="mt-3 text-sm text-muted-foreground">
-              Free to start · No credit card · Takes 2 minutes
+              {isAuthenticated
+                ? "Signed in and ready - no credit card - takes 2 minutes"
+                : "Free to start - create an account or continue as guest - takes 2 minutes"}
             </p>
           </div>
 
@@ -130,19 +135,17 @@ function Landing() {
         </div>
       </section>
 
-      {/* Trust strip */}
       <section className="border-b border-border bg-card">
         <div className="mx-auto grid max-w-7xl grid-cols-2 gap-6 px-4 py-8 sm:px-6 md:grid-cols-4">
-          {stats.map((s) => (
-            <div key={s.label} className="text-center">
-              <p className="text-3xl font-extrabold text-primary">{s.value}</p>
-              <p className="mt-1 text-sm text-muted-foreground">{s.label}</p>
+          {stats.map((stat) => (
+            <div key={stat.label} className="text-center">
+              <p className="text-3xl font-extrabold text-primary">{stat.value}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{stat.label}</p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* Explore courses */}
       <section id="explore" className="mx-auto max-w-7xl px-4 py-16 sm:px-6">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
@@ -155,7 +158,7 @@ function Landing() {
             <Search className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(event) => setQuery(event.target.value)}
               placeholder="Search courses, skills, providers"
               aria-label="Search courses"
               className="pl-9"
@@ -164,33 +167,31 @@ function Landing() {
         </div>
 
         <div className="mt-6 flex flex-wrap gap-2">
-          {["All", ...categories].map((c) => (
+          {["All", ...categories].map((currentCategory) => (
             <button
-              key={c}
+              key={currentCategory}
               type="button"
-              aria-pressed={c === category}
+              aria-pressed={currentCategory === category}
               className={`rounded-full border px-3 py-1.5 text-sm transition-colors ${
-                c === category
+                currentCategory === category
                   ? "border-primary bg-primary text-primary-foreground"
                   : "border-input bg-background hover:bg-accent hover:text-accent-foreground"
               }`}
-              onClick={() => setCategory(c)}
+              onClick={() => setCategory(currentCategory)}
             >
-              {c}
+              {currentCategory}
             </button>
           ))}
         </div>
 
         <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {visible.slice(0, 6).map((c) => (
-            <CourseCard key={c.id} course={c} />
+          {visible.slice(0, 6).map((course) => (
+            <CourseCard key={course.id} course={course} />
           ))}
         </div>
-        {visible.length === 0 && (
-          <p className="mt-10 text-center text-muted-foreground">
-            No courses match that search yet.
-          </p>
-        )}
+        {visible.length === 0 ? (
+          <p className="mt-10 text-center text-muted-foreground">No courses match that search yet.</p>
+        ) : null}
 
         <div className="mt-8 text-center">
           <Button variant="outline" asChild>
@@ -202,7 +203,6 @@ function Landing() {
         </div>
       </section>
 
-      {/* Featured paths */}
       <section className="border-y border-border bg-secondary/40 py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <h2 className="text-3xl font-bold tracking-tight">Featured learning paths</h2>
@@ -210,20 +210,23 @@ function Landing() {
             Pre-built roadmaps that personalize themselves the moment you join.
           </p>
           <div className="mt-8 flex snap-x gap-6 overflow-x-auto pb-4">
-            {learningPaths.map((p) => (
-              <article key={p.id} className="surface-card hover-lift w-80 shrink-0 snap-start p-6">
+            {learningPaths.map((path) => (
+              <article
+                key={path.id}
+                className="surface-card hover-lift w-80 shrink-0 snap-start p-6"
+              >
                 <span className="gradient-ai flex size-10 items-center justify-center rounded-xl">
                   <BookOpen className="size-5 text-primary-foreground" />
                 </span>
-                <h3 className="mt-4 text-lg font-semibold">{p.title}</h3>
-                <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">{p.goal}</p>
+                <h3 className="mt-4 text-lg font-semibold">{path.title}</h3>
+                <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">{path.goal}</p>
                 <div className="mt-4 flex flex-wrap gap-2 text-xs">
-                  <Badge variant="secondary">{p.courses} courses</Badge>
-                  <Badge variant="secondary">{p.weeks} weeks</Badge>
-                  <Badge variant="outline">{p.level}</Badge>
+                  <Badge variant="secondary">{path.courses} courses</Badge>
+                  <Badge variant="secondary">{path.weeks} weeks</Badge>
+                  <Badge variant="outline">{path.level}</Badge>
                 </div>
                 <Button className="mt-5 w-full" variant="outline" asChild>
-                  <Link to="/path/$id" params={{ id: p.id }}>
+                  <Link to="/path/$id" params={{ id: path.id }}>
                     View roadmap
                   </Link>
                 </Button>
@@ -233,37 +236,37 @@ function Landing() {
         </div>
       </section>
 
-      {/* How it works */}
       <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6">
         <h2 className="text-3xl font-bold tracking-tight">How it works</h2>
         <div className="mt-10 grid gap-6 md:grid-cols-4">
-          {steps.map((s, i) => (
-            <div key={s.title} className="surface-card hover-lift p-6">
+          {steps.map((step, index) => (
+            <div key={step.title} className="surface-card hover-lift p-6">
               <div className="flex items-center gap-3">
                 <span className="flex size-10 items-center justify-center rounded-xl bg-primary-soft text-primary">
-                  <s.icon className="size-5" />
+                  <step.icon className="size-5" />
                 </span>
-                <span className="text-sm font-semibold text-muted-foreground">Step {i + 1}</span>
+                <span className="text-sm font-semibold text-muted-foreground">Step {index + 1}</span>
               </div>
-              <h3 className="mt-4 font-semibold">{s.title}</h3>
-              <p className="mt-2 text-sm text-muted-foreground">{s.body}</p>
+              <h3 className="mt-4 font-semibold">{step.title}</h3>
+              <p className="mt-2 text-sm text-muted-foreground">{step.body}</p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* Testimonials */}
       <section className="border-t border-border bg-secondary/40 py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6">
           <h2 className="text-3xl font-bold tracking-tight">Learners who hit their goal</h2>
           <div className="mt-10 grid gap-6 md:grid-cols-3">
-            {testimonials.map((t) => (
-              <figure key={t.name} className="surface-card hover-lift p-6">
+            {testimonials.map((testimonial) => (
+              <figure key={testimonial.name} className="surface-card hover-lift p-6">
                 <Quote className="size-6 text-ai" />
-                <blockquote className="mt-4 text-sm leading-relaxed">“{t.quote}”</blockquote>
+                <blockquote className="mt-4 text-sm leading-relaxed">
+                  "{testimonial.quote}"
+                </blockquote>
                 <figcaption className="mt-5 text-sm">
-                  <span className="font-semibold">{t.name}</span>
-                  <span className="block text-muted-foreground">{t.role}</span>
+                  <span className="font-semibold">{testimonial.name}</span>
+                  <span className="block text-muted-foreground">{testimonial.role}</span>
                 </figcaption>
               </figure>
             ))}
@@ -271,7 +274,6 @@ function Landing() {
         </div>
       </section>
 
-      {/* CTA */}
       <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6">
         <div className="gradient-ai flex flex-col items-center gap-4 rounded-3xl px-8 py-14 text-center">
           <MessageSquareText className="size-8 text-primary-foreground" />
@@ -279,7 +281,9 @@ function Landing() {
             Describe your goal. Get a roadmap in 60 seconds.
           </h2>
           <Button size="lg" variant="secondary" asChild>
-            <Link to="/onboarding">Start my profile</Link>
+            <Link to={isAuthenticated ? "/onboarding" : "/signup"}>
+              {isAuthenticated ? "Start my profile" : "Create account to start"}
+            </Link>
           </Button>
         </div>
       </section>
