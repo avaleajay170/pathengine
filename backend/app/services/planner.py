@@ -9,3 +9,4 @@ def build_roadmap(ranked_candidates: list[dict], prerequisite_graph: dict, weekl
 
 def replan(current_roadmap: list[dict], updated_gaps: list[dict], prerequisite_graph: dict, weekly_hours: float) -> list[dict]:
     return []
+

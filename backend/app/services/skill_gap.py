@@ -1,5 +1,5 @@
 """
-Skill Gap Engine. Deterministic logic only — no LLM calls here.
+Skill Gap Engine. Deterministic logic only ï¿½ no LLM calls here.
 """
 
 
